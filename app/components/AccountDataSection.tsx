@@ -6,7 +6,7 @@ import { User, CheckCircle, AlertCircle, Search, UserCheck, XCircle } from 'luci
 
 interface AccountDataSectionProps {
   username: string;
-  onChangeUsername: (username: string) => void;
+  onChangeUsername: (username: string, userId?: string | number) => void;
 }
 
 interface RobloxAccountData {
@@ -42,8 +42,8 @@ export default function AccountDataSection({
           displayName: data.displayName || data.username,
           avatarUrl: data.avatarUrl || '',
         });
-        // Normalize username to exact casing returned from Roblox API
-        onChangeUsername(data.username);
+        // Normalize username to exact casing and store verified Roblox User ID
+        onChangeUsername(data.username, data.userId);
       } else {
         setErrorMessage(data.message || 'Username Roblox tidak ditemukan. Pastikan ejaan benar!');
       }

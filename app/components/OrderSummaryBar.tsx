@@ -13,6 +13,7 @@ import {
 
 interface OrderSummaryBarProps {
   username: string;
+  robloxUserId?: string | number;
   selectedItem: RobuxItem | null;
   paymentChannel: 'website' | 'whatsapp';
   cart: RobuxItem[];
@@ -24,6 +25,7 @@ interface OrderSummaryBarProps {
 
 export default function OrderSummaryBar({
   username,
+  robloxUserId,
   selectedItem,
   paymentChannel,
   cart,
@@ -73,10 +75,12 @@ export default function OrderSummaryBar({
     if (paymentChannel === 'whatsapp') {
       const adminPhone = '6287816959979';
       const itemsText = isCartCheckout
-        ? cart.map((c) => `- ${c.amount} Robux (${formatRupiah(c.price)})`).join('%0A')
+        ? cart.map((c) => `- ${c.amount} Robux (${formatRupiah(c.price)})`).join('\n')
         : `- ${formatRobux(totalRobux)} Robux (${formatRupiah(grandTotal)})`;
 
-      const message = `Halo Admin BloxyLucy! 🌸%0A%0ASaya ingin melakukan Top Up Robux dengan rincian:%0A%0A👤 *Username Roblox:* ${username}%0A💎 *Pesanan:*%0A${itemsText}%0A💰 *Total Harga:* ${formatRupiah(grandTotal)}%0A💳 *Metode Pembayaran:* WhatsApp Direct / Admin Transfer%0A%0AMohon segera diproses ya min, terima kasih! ✨`;
+      const message = encodeURIComponent(
+        `Halo Admin BloxyLucy!\n\nSaya ingin melakukan Top Up Robux dengan rincian:\n\n*Username Roblox:* ${username}\n*Pesanan:*\n${itemsText}\n*Total Harga:* ${formatRupiah(grandTotal)}\n*Metode Pembayaran:* WhatsApp Direct / Admin Transfer\n\nMohon segera diproses ya min, terima kasih!`
+      );
       
       window.open(`https://wa.me/${adminPhone}?text=${message}`, '_blank');
       return;
@@ -84,7 +88,8 @@ export default function OrderSummaryBar({
 
     // Navigate to dedicated Checkout Page
     const encodedUser = encodeURIComponent(username.trim());
-    router.push(`/checkout?username=${encodedUser}&amount=${totalRobux}&price=${grandTotal}`);
+    const encodedUid = robloxUserId ? encodeURIComponent(String(robloxUserId)) : '';
+    router.push(`/checkout?username=${encodedUser}&amount=${totalRobux}&price=${grandTotal}&userId=${encodedUid}`);
   };
 
   if (!selectedItem && cart.length === 0) return null;

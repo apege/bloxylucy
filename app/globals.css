@@ -58,6 +58,36 @@ body {
   animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Continuous Infinite Marquee Animation (Right to Left) */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 18s linear infinite;
+}
+
+.animate-marquee:hover,
+.animate-marquee:active {
+  animation-play-state: paused;
+}
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Custom Scrollbar Light Theme */
 ::-webkit-scrollbar {
   width: 8px;
@@ -75,4 +105,45 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #f472b6;
+}
+
+/* Sakura Petal Falling Animation */
+@keyframes sakuraFall {
+  0% {
+    transform: translate(0, -10px) rotate(0deg) scale(0.8);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.8;
+  }
+  50% {
+    transform: translate(40px, 50vh) rotate(180deg) scale(1);
+    opacity: 0.9;
+  }
+  85% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-30px, 105vh) rotate(360deg) scale(0.7);
+    opacity: 0;
+  }
+}
+
+.animate-sakura {
+  animation: sakuraFall linear infinite;
+}
+
+@keyframes pulseSlow {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.08);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulseSlow 6s ease-in-out infinite;
 }

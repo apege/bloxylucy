@@ -135,7 +135,8 @@ export default function SakuraFalling() {
         />
       )}
 
-      {/* Floating Toggle Sakura Effect */}
+      {/* Floating Toggle Sakura Effect (Commented Out) */}
+      {/* 
       <button
         onClick={() => setIsEnabled(!isEnabled)}
         title={isEnabled ? 'Nonaktifkan Efek Sakura' : 'Aktifkan Efek Sakura'}
@@ -144,6 +145,7 @@ export default function SakuraFalling() {
         <span>🌸</span>
         <span>{isEnabled ? 'Sakura On' : 'Sakura Off'}</span>
       </button>
+      */}
     </>
   );
 }

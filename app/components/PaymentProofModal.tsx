@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { RobuxItem } from './data';
 import { 
@@ -11,6 +11,7 @@ import {
   FileCheck,
   QrCode
 } from 'lucide-react';
+import { getStoreSettings, submitCheckout } from '@/lib/supabase-service';
 
 interface PaymentProofModalProps {
   isOpen: boolean;
@@ -31,7 +32,18 @@ export default function PaymentProofModal({
 }: PaymentProofModalProps) {
   const [proofImage, setProofImage] = useState<string | null>(null);
   const [proofFileName, setProofFileName] = useState<string>('');
+  const [customerPhone, setCustomerPhone] = useState<string>('');
+  const [customerNotes, setCustomerNotes] = useState<string>('');
+  const [qrisImage, setQrisImage] = useState('/images/qris.webp');
+  const [storeTitle, setStoreTitle] = useState('BLOXYLUCY OFFICIAL');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    getStoreSettings().then((s) => {
+      if (s?.qris_image_path) setQrisImage(s.qris_image_path);
+      if (s?.store_name) setStoreTitle(s.store_name.toUpperCase());
+    }).catch(console.error);
+  }, []);
 
   if (!isOpen) return null;
 
@@ -56,6 +68,16 @@ export default function PaymentProofModal({
     return new Intl.NumberFormat('id-ID').format(num);
   };
 
+  const normalizePhone = (num: string) => {
+    let cleaned = num.replace(/[^0-9]/g, '');
+    if (cleaned.startsWith('0')) {
+      cleaned = '62' + cleaned.slice(1);
+    } else if (!cleaned.startsWith('62')) {
+      cleaned = '62' + cleaned;
+    }
+    return cleaned;
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -68,17 +90,44 @@ export default function PaymentProofModal({
     }
   };
 
-  const handleConfirmWhatsApp = () => {
+  const handleConfirmWhatsApp = async () => {
+    if (!customerPhone.trim()) {
+      alert('Silakan masukkan Nomor WhatsApp aktif Anda.');
+      return;
+    }
+    const formattedPhone = normalizePhone(customerPhone);
+    if (formattedPhone.length < 10) {
+      alert('Nomor WhatsApp tidak valid. Silakan masukkan nomor HP yang benar (contoh: 081234567890).');
+      return;
+    }
+
+    try {
+      await submitCheckout({
+        roblox_username: username || 'Guest',
+        amount: totalRobux,
+        price: grandTotal,
+        payment_method: 'Website',
+        payment_proof_path: proofImage || null,
+        customer_phone: formattedPhone,
+        customer_notes: customerNotes.trim() || undefined,
+        cart_items: isCartCheckout ? cart : undefined,
+      });
+    } catch (err) {
+      console.warn('Auto submit checkout error:', err);
+    }
+
     const adminPhone = '6287816959979';
     const itemsText = isCartCheckout
-      ? cart.map((c) => `- ${c.amount} Robux (${formatRupiah(c.price)})`).join('%0A')
+      ? cart.map((c) => `- ${c.amount} Robux (${formatRupiah(c.price)})`).join('\n')
       : `- ${formatRobux(totalRobux)} Robux (${formatRupiah(grandTotal)})`;
 
     const proofNote = proofImage
-      ? '%0A%E2%9C%85 *Status:* Bukti Transfer Sudah Diupload di Website'
-      : '%0A%E2%9C%85 *Status:* Bukti Transfer Saya Lampirkan di Chat Ini';
+      ? '\n*Status:* Bukti Transfer Sudah Diupload di Website'
+      : '\n*Status:* Bukti Transfer Saya Lampirkan di Chat Ini';
 
-    const message = `Halo Admin BloxyLucy! 🌸%0A%0ASaya ingin konfirmasi pembayaran Top Up Robux via QRIS:%0A%0A👤 *Username Roblox:* ${username || '-'}${proofNote}%0A💎 *Pesanan:*%0A${itemsText}%0A💰 *Total Pembayaran:* ${formatRupiah(grandTotal)}%0A%0AMohon segera dicek dan diproses ke akun Roblox saya ya min. Terima kasih! ✨`;
+    const message = encodeURIComponent(
+      `Halo Admin BloxyLucy!\n\nSaya ingin konfirmasi pembayaran Top Up Robux via QRIS:\n\n*Username Roblox:* ${username || '-'}\n*No. WA Pembeli:* ${formattedPhone}${proofNote}\n*Pesanan:*\n${itemsText}\n*Total Pembayaran:* ${formatRupiah(grandTotal)}\n\nMohon segera dicek dan diproses ke akun Roblox saya ya min. Terima kasih!`
+    );
 
     window.open(`https://wa.me/${adminPhone}?text=${message}`, '_blank');
     onSuccessOrder();
@@ -118,33 +167,14 @@ export default function PaymentProofModal({
           Silahkan Scan QRIS untuk melakukan pembayaran sesuai dengan total Pembayaran diatas
         </p>
 
-        {/* QRIS Card Frame */}
-        <div className="p-3.5 rounded-2xl bg-white border border-zinc-200 shadow-xs space-y-2 max-w-[280px] mx-auto">
-          <div className="border border-zinc-200 rounded-xl p-3 bg-white space-y-2">
-            {/* Header QRIS & GPN Logo */}
-            <div className="flex items-center justify-between px-1">
-              <span className="text-xs font-black tracking-wider text-zinc-900">
-                QRIS
-              </span>
-              <span className="text-[10px] font-bold text-rose-600">
-                GPN
-              </span>
-            </div>
-
-            <div className="text-[10px] text-zinc-500 font-mono">
-              BLOXYLUCY OFFICIAL<br />
-              <span className="text-[9px] text-zinc-400">NMID: ID102003004050</span>
-            </div>
-
-            {/* QR Image Box */}
-            <div className="relative w-44 h-44 mx-auto bg-zinc-50 rounded-lg p-1.5 flex items-center justify-center border border-zinc-200">
-              <QrCode className="w-40 h-40 text-zinc-900" />
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-8 h-8 rounded-full bg-pink-500 border-2 border-white flex items-center justify-center text-white font-bold text-xs shadow-xs">
-                  🌸
-                </div>
-              </div>
-            </div>
+        {/* QRIS Card Frame (Clean Poster View) */}
+        <div className="p-3 rounded-2xl bg-white border border-pink-200/80 shadow-xs space-y-2 max-w-[280px] mx-auto">
+          <div className="relative w-full aspect-square max-w-[240px] mx-auto bg-zinc-50 rounded-xl p-1.5 flex items-center justify-center border border-zinc-200 overflow-hidden">
+            <img
+              src={qrisImage}
+              alt="Barcode QRIS"
+              className="max-h-full max-w-full object-contain rounded-lg"
+            />
           </div>
 
           <p className="text-[11px] text-zinc-500 font-medium pt-0.5">
@@ -212,10 +242,42 @@ export default function PaymentProofModal({
           </div>
         )}
 
-        {/* WhatsApp Instructions */}
-        <p className="text-xs text-zinc-500 leading-relaxed px-2">
-          Setelah transfer, silakan konfirmasi pembayaran ke Admin via WhatsApp.
-        </p>
+        {/* WhatsApp Customer Phone Input */}
+        <div className="space-y-1.5 text-left bg-pink-50/50 border border-pink-200/70 p-3.5 rounded-2xl">
+          <label className="block text-xs font-bold text-zinc-800">
+            Nomor WhatsApp Anda <span className="text-pink-600 font-black">*</span>
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500 text-xs font-black tracking-wider">
+              +62
+            </div>
+            <input
+              type="tel"
+              value={customerPhone.startsWith('62') ? customerPhone.slice(2) : customerPhone.startsWith('0') ? customerPhone.slice(1) : customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value.replace(/[^0-9]/g, ''))}
+              placeholder="81234567890"
+              className="w-full pl-12 pr-4 py-2.5 bg-white border border-pink-200 focus:border-pink-500 focus:ring-2 focus:ring-pink-400/20 rounded-xl text-sm font-bold text-zinc-900 placeholder-zinc-400 outline-none transition-all shadow-2xs"
+            />
+          </div>
+          <p className="text-[10px] text-zinc-500 leading-tight">
+            Nomor ini digunakan admin untuk konfirmasi &amp; kirim link review pesanan otomatis.
+          </p>
+        </div>
+
+        {/* Catatan Pelanggan (Opsional) */}
+        <div className="space-y-1.5 text-left bg-zinc-50/80 border border-zinc-200/80 p-3.5 rounded-2xl">
+          <label className="block text-xs font-bold text-zinc-800 flex items-center justify-between">
+            <span>Catatan Pesanan</span>
+            <span className="text-[10px] font-semibold text-zinc-400">Opsional</span>
+          </label>
+          <textarea
+            rows={2}
+            value={customerNotes}
+            onChange={(e) => setCustomerNotes(e.target.value)}
+            placeholder="Contoh: Tolong kirim ke Gamepass / catatan tambahan..."
+            className="w-full p-2.5 bg-white border border-zinc-200 focus:border-pink-500 focus:ring-2 focus:ring-pink-400/20 rounded-xl text-xs text-zinc-900 placeholder-zinc-400 outline-none transition-all resize-none shadow-2xs"
+          />
+        </div>
 
         {/* Full Width Green WhatsApp Confirmation Button */}
         <button

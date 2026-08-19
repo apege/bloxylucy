@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { ShoppingCart, Flame, ShieldCheck, Menu, X, MessageCircle } from 'lucide-react';
+import { getStoreSettings } from '@/lib/supabase-service';
 
 interface NavbarProps {
   cartCount: number;
@@ -11,6 +12,31 @@ interface NavbarProps {
 
 export default function Navbar({ cartCount, onOpenCart }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [storeName, setStoreName] = useState('BloxyLucy');
+  const [logoPath, setLogoPath] = useState('/images/logo.jpeg');
+  const [csPhone, setCsPhone] = useState('6287816959979');
+
+  useEffect(() => {
+    getStoreSettings().then((s) => {
+      if (s?.store_name) setStoreName(s.store_name);
+      if (s?.logo_image_path) setLogoPath(s.logo_image_path);
+      if (s?.whatsapp_number) setCsPhone(s.whatsapp_number);
+    }).catch(console.error);
+  }, []);
+
+    const renderBrandName = (name: string) => {
+    if (name.toLowerCase().startsWith('bloxy')) {
+      const prefix = name.slice(0, 5); // "Bloxy"
+      const rest = name.slice(5);      // "Lucy"
+      return (
+        <>
+          <span className="text-pink-600">{prefix}</span>
+          <span className="text-zinc-900">{rest}</span>
+        </>
+      );
+    }
+    return <span className="text-pink-600">{name}</span>;
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-pink-100 bg-white/90 backdrop-blur-md shadow-xs">
@@ -21,21 +47,18 @@ export default function Navbar({ cartCount, onOpenCart }: NavbarProps) {
           <div className="flex items-center gap-3">
             <div className="relative group cursor-pointer">
               <div className="relative w-11 h-11 md:w-13 md:h-13 rounded-full overflow-hidden border-2 border-pink-300 bg-pink-50 flex items-center justify-center shadow-sm">
-                <Image
-                  src="/images/logo.jpeg"
-                  alt="BloxyLucy Logo"
-                  width={52}
-                  height={52}
+                <img
+                  src={logoPath}
+                  alt={storeName}
                   className="object-cover w-full h-full scale-105"
-                  priority
                 />
               </div>
             </div>
             
             <a href="#" className="flex flex-col">
               <div className="flex items-center gap-1.5">
-                <span className="text-xl md:text-2xl font-black tracking-tight text-pink-600 font-sans">
-                  Bloxy<span className="text-zinc-900">Lucy</span>
+                <span className="text-xl md:text-2xl font-black tracking-tight font-sans">
+                  {renderBrandName(storeName)}
                 </span>
               </div>
               <span className="text-[11px] text-zinc-500 font-medium hidden sm:inline-block">
@@ -71,7 +94,7 @@ export default function Navbar({ cartCount, onOpenCart }: NavbarProps) {
           {/* Actions: WhatsApp CS & Cart */}
           <div className="flex items-center gap-3">
             <a
-              href="https://wa.me/6287816959979?text=Halo%20Admin%20BloxyLucy,%20saya%20mau%20tanya%20top%20up%20Robux"
+              href={`https://wa.me/${csPhone}?text=Halo%20Admin%20${encodeURIComponent(storeName)},%20saya%20mau%20tanya%20top%20up%20Robux`}
               target="_blank"
               rel="noopener noreferrer"
               className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-xs font-bold transition-all duration-200 shadow-sm"

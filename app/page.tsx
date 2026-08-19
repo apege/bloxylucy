@@ -17,6 +17,7 @@ import { ROBUX_PRICELIST, RobuxItem } from './components/data';
 export default function Home() {
   // State for topup process
   const [username, setUsername] = useState('');
+  const [robloxUserId, setRobloxUserId] = useState<string | number>('');
   const [selectedItem, setSelectedItem] = useState<RobuxItem | null>(ROBUX_PRICELIST[1]); // Default 2200 Robux Promo
   const [paymentChannel, setPaymentChannel] = useState<'website' | 'whatsapp'>('website');
   const [cart, setCart] = useState<RobuxItem[]>([]);
@@ -57,7 +58,10 @@ export default function Home() {
         {/* 👤 Step 1: Input Account Data */}
         <AccountDataSection
           username={username}
-          onChangeUsername={setUsername}
+          onChangeUsername={(uname, uid) => {
+            setUsername(uname);
+            if (uid) setRobloxUserId(uid);
+          }}
         />
 
         {/* 💎 Step 2: Choose Robux Nominal (Pricelist) */}
@@ -83,6 +87,7 @@ export default function Home() {
       {/* 🛒 Sticky Summary & Checkout QRIS/Proof Drawer */}
       <OrderSummaryBar
         username={username}
+        robloxUserId={robloxUserId}
         selectedItem={selectedItem}
         paymentChannel={paymentChannel}
         cart={cart}

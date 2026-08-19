@@ -10,19 +10,23 @@ export interface RobuxItem {
 }
 
 export interface Testimonial {
-  id: string;
+  id: string | number;
+  order_code?: string;
   username: string;
   rating: number;
-  robuxPackage: string;
+  robuxPackage?: string;
   comment: string;
-  timeAgo: string;
-  avatarLetter: string;
+  timeAgo?: string;
+  avatarLetter?: string;
   hasProof?: boolean;
+  proofImage?: string | null;
   proofAmount?: string;
   adminReply?: {
     adminName: string;
     message: string;
-  };
+  } | null;
+  is_active?: boolean;
+  created_at?: string;
 }
 
 export const ROBUX_PRICELIST: RobuxItem[] = [
@@ -40,50 +44,4 @@ export const ROBUX_PRICELIST: RobuxItem[] = [
   { id: 'rbx-30500', amount: 30500, price: 500000, isBestValue: true },
 ];
 
-export const INITIAL_TESTIMONIALS: Testimonial[] = [
-  {
-    id: 't-1',
-    username: 'Tengkurap420',
-    rating: 5,
-    robuxPackage: '10.500 Robux',
-    comment: '200k dapet masuk cmn 7 mnit uyyyyy, seller ramah banget mantul pol! Next order lagi disini langganan.',
-    timeAgo: '10 menit yang lalu',
-    avatarLetter: 'T',
-    hasProof: true,
-    proofAmount: '11.4K',
-    adminReply: {
-      adminName: 'Admin BloxyLucy Official',
-      message: 'Makasih banyak kak sudah order di BloxyLucy! Ditunggu orderan sultan berikutnya yaa 💖✨',
-    },
-  },
-  {
-    id: 't-2',
-    username: 'QueenRoblox99',
-    rating: 5,
-    robuxPackage: '5.500 Robux',
-    comment: 'Awalnya ragu karena murah banget, ternyata beneran fast respon cuma 5 menit langsung mendarat robuxnya! Recommended bgt 💕',
-    timeAgo: '35 menit yang lalu',
-    avatarLetter: 'Q',
-    hasProof: true,
-    proofAmount: '5.8K',
-    adminReply: {
-      adminName: 'Admin BloxyLucy Official',
-      message: 'Sama-sama kakk! Kepuasan kalian prioritas kami 🥰',
-    },
-  },
-  {
-    id: 't-3',
-    username: 'Alif_BloxGamer',
-    rating: 5,
-    robuxPackage: '30.500 Robux',
-    comment: 'Beli paket sultan 30.5k robux buat game pass Blox Fruits, proses kilat ga pake ribet cuma username aja. Mantappp 🔥',
-    timeAgo: '2 jam yang lalu',
-    avatarLetter: 'A',
-    hasProof: true,
-    proofAmount: '32.1K',
-    adminReply: {
-      adminName: 'Admin BloxyLucy Official',
-      message: 'Wah mantap selamat borong game pass nya ya kakk! 👑🎉',
-    },
-  },
-];
+export const INITIAL_TESTIMONIALS: Testimonial[] = [];
