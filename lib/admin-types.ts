@@ -25,6 +25,22 @@ export interface Order {
   updated_at?: string;
 }
 
+export function isWhatsAppOrder(order: { payment_method?: string; customer_notes?: string | null; admin_notes?: string | null } | null | undefined): boolean {
+  if (!order) return false;
+  const m = (order.payment_method || '').toLowerCase();
+  const c = (order.customer_notes || '').toLowerCase();
+  const a = (order.admin_notes || '').toLowerCase();
+  return (
+    m.includes('whatsapp') ||
+    m === 'wa' ||
+    m.startsWith('wa') ||
+    c.includes('whatsapp') ||
+    c.includes('wa') ||
+    a.includes('whatsapp') ||
+    a.includes('wa')
+  );
+}
+
 export interface StorageCleanupLog {
   id: number;
   cleaned_count: number;

@@ -63,10 +63,10 @@ export async function getOrders(params?: { search?: string; status?: string; pay
       url += `?${sp.toString()}`;
     }
 
-    const res = await fetch(url);
+    const res = await fetch(url, { cache: 'no-store' });
     if (res.ok) {
       const json = await res.json();
-      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+      if (json.success && Array.isArray(json.data)) {
         setLocal(STORAGE_KEY_ORDERS, json.data);
         return json.data;
       }
@@ -80,7 +80,7 @@ export async function getOrders(params?: { search?: string; status?: string; pay
 
 export async function getOrderById(idOrCode: string | number): Promise<Order | null> {
   try {
-    const res = await fetch(`/api/orders/${idOrCode}`);
+    const res = await fetch(`/api/orders/${idOrCode}`, { cache: 'no-store' });
     if (res.ok) {
       const json = await res.json();
       if (json.success && json.data) {
