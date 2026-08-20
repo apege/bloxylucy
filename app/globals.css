@@ -61,10 +61,10 @@ body {
 /* Continuous Infinite Marquee Animation (Right to Left) */
 @keyframes marquee {
   0% {
-    transform: translateX(0%);
+    transform: translate3d(0, 0, 0);
   }
   100% {
-    transform: translateX(-50%);
+    transform: translate3d(-50%, 0, 0);
   }
 }
 
@@ -72,11 +72,19 @@ body {
   display: flex;
   width: max-content;
   animation: marquee 18s linear infinite;
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .animate-marquee:hover,
 .animate-marquee:active {
   animation-play-state: paused;
+}
+
+/* Optimization for below-the-fold content sections */
+.content-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 500px;
 }
 
 /* Hide scrollbar utility */
