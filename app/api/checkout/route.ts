@@ -59,18 +59,24 @@ export async function POST(req: NextRequest) {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString();
 
+    const requestedMethod = body.payment_method || 'Website';
+    const isWa = String(requestedMethod).toLowerCase().includes('whatsapp') || 
+                 String(requestedMethod).toLowerCase().startsWith('wa') || 
+                 String(customer_notes || '').toLowerCase().includes('whatsapp') ||
+                 String(customer_notes || '').toLowerCase().includes('wa');
+
     const fullPayload: Record<string, any> = {
       order_code: orderCode,
       roblox_username: cleanUsername,
       customer_phone: cleanPhone,
       robux: Math.max(1, Number(amount)),
       price: Math.max(0, Number(price)),
-      payment_method: 'qris', // Strict match with check constraint
+      payment_method: requestedMethod,
       payment_status: payment_proof_path ? 'paid' : 'pending',
       payment_proof_path: payment_proof_path || null,
       order_status: payment_proof_path ? 'processing' : 'pending',
       roblox_user_id: finalRobloxUserId,
-      customer_notes: customer_notes ? String(customer_notes).trim() : null,
+      customer_notes: customer_notes ? String(customer_notes).trim() : (isWa ? 'Pemesanan via WhatsApp' : null),
       created_at: now.toISOString(),
       expires_at: expiresAt,
       updated_at: now.toISOString(),
@@ -83,7 +89,7 @@ export async function POST(req: NextRequest) {
       .select()
       .single();
 
-    // Resilient fallback if custom columns (roblox_user_id / customer_notes) do not exist in DB yet
+    // Resilient fallback if custom columns or payment_method constraint restricts to 'qris'
     if (orderError) {
       const basicPayload = {
         order_code: orderCode,
@@ -95,6 +101,7 @@ export async function POST(req: NextRequest) {
         payment_status: payment_proof_path ? 'paid' : 'pending',
         payment_proof_path: payment_proof_path || null,
         order_status: payment_proof_path ? 'processing' : 'pending',
+        customer_notes: isWa ? 'Pemesanan via WhatsApp' : (customer_notes ? String(customer_notes).trim() : null),
         created_at: now.toISOString(),
         expires_at: expiresAt,
         updated_at: now.toISOString(),
@@ -117,7 +124,7 @@ export async function POST(req: NextRequest) {
       orderData = {
         ...retry.data,
         roblox_user_id: finalRobloxUserId,
-        customer_notes: customer_notes || null,
+        customer_notes: isWa ? 'Pemesanan via WhatsApp' : (customer_notes || null),
       };
     }
 

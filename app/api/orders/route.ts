@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { Order } from '@/lib/admin-types';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -35,18 +38,19 @@ export async function GET(req: NextRequest) {
       roblox_username: item.roblox_username || 'Unknown',
       roblox_user_id: item.roblox_user_id || undefined,
       customer_phone: item.customer_phone || '',
-      customer_email: '',
+      customer_email: item.customer_email || '',
       robux: item.robux || 0,
       price: item.price || 0,
-      activation_fee: 0,
-      total_payment: item.price || 0,
-      payment_method: 'QRIS',
+      activation_fee: item.activation_fee || 0,
+      total_payment: item.total_payment || item.price || 0,
+      payment_method: item.payment_method || 'Website',
       payment_status: item.payment_status || 'pending',
       payment_proof_path: item.payment_proof_path,
       order_status: item.order_status || 'pending',
       customer_notes: item.customer_notes || '-',
       admin_notes: item.admin_notes || '',
       created_at: item.created_at || new Date().toISOString(),
+      expires_at: item.expires_at,
       updated_at: item.updated_at,
     }));
 
