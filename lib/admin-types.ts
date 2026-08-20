@@ -21,7 +21,28 @@ export interface Order {
   customer_notes?: string;
   admin_notes?: string;
   created_at: string;
+  expires_at?: string | null;
   updated_at?: string;
+}
+
+export interface StorageCleanupLog {
+  id: number;
+  cleaned_count: number;
+  order_codes: string[];
+  mode: 'cron' | 'manual' | 'auto_check';
+  executed_by?: string;
+  details?: any;
+  created_at: string;
+}
+
+export interface StorageRetentionStats {
+  totalWithProof: number;
+  activeCount: number;
+  expiringSoonCount: number; // H-7 (83-90 hari)
+  expiredCount: number; // >90 hari
+  expiringSoonOrders: Order[];
+  expiredOrders: Order[];
+  recentLogs: StorageCleanupLog[];
 }
 
 export interface Product {
