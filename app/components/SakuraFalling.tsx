@@ -23,12 +23,15 @@ export default function SakuraFalling() {
     if (!isEnabled) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
 
     let animationFrameId: number;
+    let isPaused = false;
     let width = (canvas.width = window.innerWidth);
     let height = (canvas.height = window.innerHeight);
+
+    const isMobile = width < 768;
 
     const handleResize = () => {
       if (!canvas) return;
@@ -36,7 +39,12 @@ export default function SakuraFalling() {
       height = canvas.height = window.innerHeight;
     };
 
-    window.addEventListener('resize', handleResize);
+    const handleVisibilityChange = () => {
+      isPaused = document.hidden;
+    };
+
+    window.addEventListener('resize', handleResize, { passive: true });
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Beautiful rose & sakura petal colors with rich visible tone for light background
     const petalColors = [
@@ -47,19 +55,20 @@ export default function SakuraFalling() {
       'rgba(253, 164, 175, ', // Rose 300
     ];
 
-    const petalCount = Math.min(Math.floor(width / 35), 32);
+    // Significantly reduced petal count on mobile (8-10) vs desktop (20) to save CPU and TBT
+    const petalCount = isMobile ? 9 : Math.min(Math.floor(width / 60), 20);
     const petals: Petal[] = [];
 
     for (let i = 0; i < petalCount; i++) {
       petals.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        size: Math.random() * 9 + 8,
-        speedX: Math.random() * 1.3 + 0.4,
-        speedY: Math.random() * 1.1 + 0.7,
+        size: Math.random() * 7 + (isMobile ? 6 : 8),
+        speedX: Math.random() * 1.1 + 0.3,
+        speedY: Math.random() * 0.9 + 0.5,
         rotation: Math.random() * 360,
-        rotationSpeed: (Math.random() - 0.5) * 1.6,
-        opacity: Math.random() * 0.4 + 0.5,
+        rotationSpeed: (Math.random() - 0.5) * 1.2,
+        opacity: Math.random() * 0.35 + 0.45,
         color: petalColors[Math.floor(Math.random() * petalColors.length)],
         petalType: Math.floor(Math.random() * 2),
       });
@@ -72,8 +81,6 @@ export default function SakuraFalling() {
       ctx.beginPath();
       
       ctx.fillStyle = `${p.color}${p.opacity})`;
-      ctx.shadowColor = 'rgba(236, 72, 153, 0.25)';
-      ctx.shadowBlur = 3;
 
       if (p.petalType === 0) {
         ctx.moveTo(0, 0);
@@ -89,38 +96,55 @@ export default function SakuraFalling() {
 
     let wind = 0;
     let time = 0;
+    let lastTime = 0;
+    const interval = isMobile ? 1000 / 30 : 1000 / 60; // 30fps on mobile for battery and CPU efficiency
 
-    const render = () => {
-      ctx.clearRect(0, 0, width, height);
-      time += 0.01;
-      wind = Math.sin(time) * 0.7;
+    const render = (currentTime: number) => {
+      if (isPaused) {
+        animationFrameId = requestAnimationFrame(render);
+        return;
+      }
 
-      for (let i = 0; i < petals.length; i++) {
-        const p = petals[i];
-        p.x += p.speedX + wind;
-        p.y += p.speedY;
-        p.rotation += p.rotationSpeed;
+      const delta = currentTime - lastTime;
+      if (delta >= interval) {
+        lastTime = currentTime - (delta % interval);
 
-        if (p.y > height + 20) {
-          p.y = -20;
-          p.x = Math.random() * width;
+        ctx.clearRect(0, 0, width, height);
+        time += 0.01;
+        wind = Math.sin(time) * 0.6;
+
+        for (let i = 0; i < petals.length; i++) {
+          const p = petals[i];
+          p.x += p.speedX + wind;
+          p.y += p.speedY;
+          p.rotation += p.rotationSpeed;
+
+          if (p.y > height + 20) {
+            p.y = -20;
+            p.x = Math.random() * width;
+          }
+          if (p.x > width + 20) {
+            p.x = -20;
+          } else if (p.x < -20) {
+            p.x = width + 20;
+          }
+
+          drawPetal(p);
         }
-        if (p.x > width + 20) {
-          p.x = -20;
-        } else if (p.x < -20) {
-          p.x = width + 20;
-        }
-
-        drawPetal(p);
       }
 
       animationFrameId = requestAnimationFrame(render);
     };
 
-    render();
+    // Slight defer so initial HTML render & LCP complete with 0 main-thread competition
+    const timer = setTimeout(() => {
+      animationFrameId = requestAnimationFrame(render);
+    }, 400);
 
     return () => {
+      clearTimeout(timer);
       window.removeEventListener('resize', handleResize);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       cancelAnimationFrame(animationFrameId);
     };
   }, [isEnabled]);
