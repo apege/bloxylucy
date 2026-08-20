@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { RobuxItem } from './data';
@@ -9,7 +9,9 @@ import {
   ShoppingCart, 
   X, 
   MessageCircle, 
+  RefreshCw,
 } from 'lucide-react';
+import { submitCheckout } from '@/lib/supabase-service';
 
 interface OrderSummaryBarProps {
   username: string;
@@ -35,6 +37,7 @@ export default function OrderSummaryBar({
   onClearCart,
 }: OrderSummaryBarProps) {
   const router = useRouter();
+  const [isSubmittingWa, setIsSubmittingWa] = useState(false);
 
   const formatRupiah = (num: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -57,7 +60,7 @@ export default function OrderSummaryBar({
     ? cart.reduce((sum, item) => sum + item.price, 0)
     : selectedItem?.price || 0;
 
-  const handleProceedCheckout = () => {
+  const handleProceedCheckout = async () => {
     if (!username.trim()) {
       alert('Silakan isi username Roblox terlebih dahulu di Langkah 1!');
       const el = document.getElementById('username-input');
@@ -73,16 +76,44 @@ export default function OrderSummaryBar({
     }
 
     if (paymentChannel === 'whatsapp') {
+      setIsSubmittingWa(true);
       const adminPhone = '6287816959979';
+      let orderCode = `BLX${Date.now().toString().slice(-6)}`;
+
+      try {
+        const res = await submitCheckout({
+          roblox_username: username.trim(),
+          roblox_user_id: robloxUserId ? String(robloxUserId) : undefined,
+          amount: totalRobux,
+          price: grandTotal,
+          payment_method: 'WhatsApp',
+          customer_notes: 'Pemesanan via WhatsApp Direct',
+          cart_items: isCartCheckout ? cart : undefined,
+        });
+
+        if (res?.order?.order_code) {
+          orderCode = res.order.order_code;
+        }
+      } catch (err) {
+        console.warn('Auto submit WhatsApp order notice:', err);
+      } finally {
+        setIsSubmittingWa(false);
+      }
+
       const itemsText = isCartCheckout
         ? cart.map((c) => `- ${c.amount} Robux (${formatRupiah(c.price)})`).join('\n')
         : `- ${formatRobux(totalRobux)} Robux (${formatRupiah(grandTotal)})`;
 
       const message = encodeURIComponent(
-        `Halo Admin BloxyLucy!\n\nSaya ingin melakukan Top Up Robux dengan rincian:\n\n*Username Roblox:* ${username}\n*Pesanan:*\n${itemsText}\n*Total Harga:* ${formatRupiah(grandTotal)}\n*Metode Pembayaran:* WhatsApp Direct / Admin Transfer\n\nMohon segera diproses ya min, terima kasih!`
+        `Halo Admin BloxyLucy!\n\nSaya ingin melakukan Top Up Robux:\n\n*Kode Order:* #${orderCode}\n*Username Roblox:* ${username}\n*Pesanan:*\n${itemsText}\n*Total Harga:* ${formatRupiah(grandTotal)}\n*Metode Pembayaran:* WhatsApp Direct / Chat Admin\n\nMohon segera diproses ya min, terima kasih!`
       );
       
       window.open(`https://wa.me/${adminPhone}?text=${message}`, '_blank');
+
+      // Also redirect user to Success Confirmation Page
+      const encodedUser = encodeURIComponent(username.trim());
+      const encodedUid = robloxUserId ? encodeURIComponent(String(robloxUserId)) : '';
+      router.push(`/checkout?username=${encodedUser}&amount=${totalRobux}&price=${grandTotal}&userId=${encodedUid}&orderCode=${orderCode}&channel=whatsapp&success=true`);
       return;
     }
 

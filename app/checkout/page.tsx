@@ -27,6 +27,9 @@ function CheckoutContent() {
   const initialUserId = searchParams.get('userId') || '';
   const amount = parseInt(searchParams.get('amount') || '2200', 10);
   const price = parseInt(searchParams.get('price') || '45000', 10);
+  const initialOrderCode = searchParams.get('orderCode') || '';
+  const channel = searchParams.get('channel') || '';
+  const isDirectSuccess = searchParams.get('success') === 'true' && Boolean(initialOrderCode);
 
   const [verifiedUserId, setVerifiedUserId] = useState<string>(initialUserId);
   const [compressedResult, setCompressedResult] = useState<CompressionResult | null>(null);
@@ -35,8 +38,8 @@ function CheckoutContent() {
   const [customerNotes, setCustomerNotes] = useState('');
   const [qrisImage, setQrisImage] = useState('/images/qris.webp');
   const [storeTitle, setStoreTitle] = useState('BLOXYLUCY OFFICIAL');
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [submittedOrderCode, setSubmittedOrderCode] = useState('');
+  const [isSubmitted, setIsSubmitted] = useState(isDirectSuccess);
+  const [submittedOrderCode, setSubmittedOrderCode] = useState(initialOrderCode);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -237,14 +240,21 @@ function CheckoutContent() {
               type="button"
               onClick={() => {
                 const adminPhone = '6287816959979';
-                const formattedPhone = normalizePhone(customerPhone);
+                const formattedPhone = customerPhone ? normalizePhone(customerPhone) : '';
                 const proofNote = compressedResult
                   ? '\n*Status:* Bukti Transfer Sudah Diupload di Website'
                   : '\n*Status:* Bukti Transfer Saya Lampirkan di Chat Ini';
                 const notesLine = customerNotes.trim() ? `\n*Catatan:* ${customerNotes.trim()}` : '';
-                const message = encodeURIComponent(
-                  `Halo Admin BloxyLucy!\n\nSaya ingin konfirmasi pembayaran Top Up Robux via QRIS:\n\n*Kode Order:* #${submittedOrderCode}\n*Username Roblox:* ${username}\n*No. WA Pembeli:* ${formattedPhone}${proofNote}${notesLine}\n*Pesanan:* ${formatRobux(amount)} Robux\n*Total Pembayaran:* ${formatRupiah(price)}\n\nMohon segera dicek dan diproses ke akun Roblox saya ya min. Terima kasih!`
-                );
+                const phoneLine = formattedPhone ? `\n*No. WA Pembeli:* ${formattedPhone}` : '';
+
+                const message = channel === 'whatsapp'
+                  ? encodeURIComponent(
+                      `Halo Admin BloxyLucy!\n\nSaya ingin melakukan Top Up Robux:\n\n*Kode Order:* #${submittedOrderCode}\n*Username Roblox:* ${username}\n*Pesanan:* ${formatRobux(amount)} Robux\n*Total Harga:* ${formatRupiah(price)}\n*Metode Pembayaran:* WhatsApp Direct / Chat Admin\n\nMohon segera dicek dan diproses ya min. Terima kasih!`
+                    )
+                  : encodeURIComponent(
+                      `Halo Admin BloxyLucy!\n\nSaya ingin konfirmasi pembayaran Top Up Robux via QRIS:\n\n*Kode Order:* #${submittedOrderCode}\n*Username Roblox:* ${username}${phoneLine}${proofNote}${notesLine}\n*Pesanan:* ${formatRobux(amount)} Robux\n*Total Pembayaran:* ${formatRupiah(price)}\n\nMohon segera dicek dan diproses ke akun Roblox saya ya min. Terima kasih!`
+                    );
+
                 window.open(`https://wa.me/${adminPhone}?text=${message}`, '_blank');
               }}
               className="w-full py-3.5 rounded-2xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-emerald-500/20 transition-all cursor-pointer"
