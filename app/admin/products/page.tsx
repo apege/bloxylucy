@@ -42,23 +42,13 @@ function ProductsContent() {
   const loadProductList = async () => {
     setLoading(true);
     try {
-      const [prods, st, ordRes] = await Promise.all([
+      const [prods, st] = await Promise.all([
         getProducts(),
         getStoreSettings().catch(() => null),
-        fetch('/api/orders', { cache: 'no-store' }).then((r) => r.json()).catch(() => null),
       ]);
       setProducts(prods);
       if (st) setSettings(st);
-
-      const orders = ordRes?.success && Array.isArray(ordRes.data) ? ordRes.data : [];
-      const counts: Record<number, number> = {};
-      orders.forEach((o: any) => {
-        if (o.robux) counts[o.robux] = (counts[o.robux] || 0) + 1;
-      });
-      const sorted = Object.entries(counts)
-        .sort((a, b) => b[1] - a[1])
-        .map(([amt]) => Number(amt));
-      setPopularSet(new Set(sorted.length > 0 ? sorted.slice(0, 2) : [1000, 2200]));
+      setPopularSet(new Set([1000, 2200]));
     } catch (err) {
       console.error(err);
     } finally {
@@ -111,50 +101,78 @@ function ProductsContent() {
       );
       if (!confirmUpdate) return;
 
-      setIsSaving(true);
+      const updatedPayload: Partial<Product> = {
+        ...duplicateProduct,
+        price: editingProduct.price,
+        is_active: editingProduct.is_active ?? duplicateProduct.is_active,
+      };
+
+      // Optimistic update
+      setProducts((prev) =>
+        prev.map((p) => (p.id === duplicateProduct.id ? { ...p, ...updatedPayload } as Product : p))
+      );
+      setEditingProduct(null);
+
       try {
-        await saveProduct({
-          ...duplicateProduct,
-          price: editingProduct.price,
-          is_active: editingProduct.is_active ?? duplicateProduct.is_active,
-        });
-        setEditingProduct(null);
-        await loadProductList();
+        await saveProduct(updatedPayload);
       } catch (err: any) {
         console.error(err);
-        alert('Gagal memperbarui produk: ' + (err.message || 'Error'));
-      } finally {
-        setIsSaving(false);
+        loadProductList();
       }
       return;
     }
 
-    setIsSaving(true);
+    const payload: Partial<Product> = {
+      ...editingProduct,
+      name: editingProduct.name || `${formatRobux(editingProduct.robux)} Robux`,
+    };
+
+    // Optimistic UI Update - Instantly close modal & show update
+    if (editingProduct.id) {
+      setProducts((prev) =>
+        prev.map((p) => (p.id === editingProduct.id ? { ...p, ...payload } as Product : p))
+      );
+    } else {
+      const tempId = Math.max(0, ...products.map((p) => p.id)) + 1;
+      setProducts((prev) => [...prev, { ...payload, id: tempId } as Product]);
+    }
+    setEditingProduct(null);
+
     try {
-      await saveProduct({
-        ...editingProduct,
-        name: editingProduct.name || `${formatRobux(editingProduct.robux)} Robux`,
-      });
-      setEditingProduct(null);
-      await loadProductList();
+      const saved = await saveProduct(payload);
+      if (saved && !editingProduct.id) {
+        setProducts((prev) => prev.map((p) => (p.name === saved.name && p.robux === saved.robux ? saved : p)));
+      }
     } catch (err: any) {
       console.error(err);
-      alert('Gagal menyimpan produk: ' + (err.message || 'Error'));
-    } finally {
-      setIsSaving(false);
+      loadProductList();
     }
   };
 
   const handleDelete = async (id: number) => {
     if (confirm('Apakah kamu yakin ingin menghapus produk ini?')) {
-      await deleteProduct(id);
-      await loadProductList();
+      // Optimistic delete
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+      try {
+        await deleteProduct(id);
+      } catch (err) {
+        console.error(err);
+        loadProductList();
+      }
     }
   };
 
   const handleToggleActive = async (prod: Product) => {
-    await saveProduct({ ...prod, is_active: !prod.is_active });
-    await loadProductList();
+    // Optimistic toggle
+    setProducts((prev) =>
+      prev.map((p) => (p.id === prod.id ? { ...p, is_active: !p.is_active } : p))
+    );
+    try {
+      await saveProduct({ ...prod, is_active: !prod.is_active });
+    } catch (err) {
+      console.error(err);
+      loadProductList();
+    }
   };
 
   return (

@@ -208,61 +208,72 @@ function TestimonialsContent() {
       return;
     }
 
-    setIsSaving(true);
+    const payloadItem: Testimonial = {
+      id: editingItem.id || `testi-${Date.now()}`,
+      username: editingItem.username.trim(),
+      avatarLetter: editingItem.username.trim()[0]?.toUpperCase() || 'U',
+      rating: editingItem.rating || 5,
+      comment: editingItem.comment.trim(),
+      robuxPackage: editingItem.order_code || 'Robux',
+      order_code: editingItem.order_code || undefined,
+      timeAgo: 'Baru saja',
+      hasProof: Boolean(editingItem.proofImage),
+      proofImage: editingItem.proofImage || undefined,
+      is_active: editingItem.is_active !== false,
+      adminReply: editingItem.adminReply || undefined,
+      created_at: new Date().toISOString(),
+    };
+
+    // Optimistic UI Update - Instantly close modal and update list
+    if (editingItem.id) {
+      setTestimonials((prev) =>
+        prev.map((t) => (t.id === editingItem.id ? { ...t, ...payloadItem } : t))
+      );
+      showToast('Testimoni berhasil diperbarui!');
+    } else {
+      setTestimonials((prev) => [payloadItem, ...prev]);
+      showToast('Testimoni baru berhasil ditambahkan!');
+    }
+
+    setIsEditModalOpen(false);
+    setEditingItem(null);
+
     try {
       if (editingItem.id) {
         // EDIT Existing Testimonial
-        const res = await fetch(`/api/testimonials/${editingItem.id}`, {
+        await fetch(`/api/testimonials/${editingItem.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            name: editingItem.username.trim(),
-            message: editingItem.comment.trim(),
-            rating: editingItem.rating || 5,
-            image_path: editingItem.proofImage || null,
-            order_code: editingItem.order_code || null,
-            is_active: editingItem.is_active !== false,
-            admin_reply: editingItem.adminReply || null,
+            name: payloadItem.username,
+            message: payloadItem.comment,
+            rating: payloadItem.rating,
+            image_path: payloadItem.proofImage || null,
+            order_code: payloadItem.order_code || null,
+            is_active: payloadItem.is_active !== false,
+            admin_reply: payloadItem.adminReply || null,
           }),
         });
-        if (res.ok) {
-          showToast('Testimoni berhasil diperbarui!');
-          setIsEditModalOpen(false);
-          setEditingItem(null);
-          loadData();
-        } else {
-          alert('Gagal memperbarui testimoni.');
-        }
       } else {
         // CREATE New Testimonial
-        const res = await fetch('/api/testimonials', {
+        await fetch('/api/testimonials', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             is_admin_create: true,
-            name: editingItem.username.trim(),
-            message: editingItem.comment.trim(),
-            rating: editingItem.rating || 5,
-            image_path: editingItem.proofImage || null,
-            order_code: editingItem.order_code || null,
-            status: editingItem.is_active !== false ? 'approved' : 'rejected',
-            admin_reply: editingItem.adminReply || null,
+            name: payloadItem.username,
+            message: payloadItem.comment,
+            rating: payloadItem.rating,
+            image_path: payloadItem.proofImage || null,
+            order_code: payloadItem.order_code || null,
+            status: payloadItem.is_active !== false ? 'approved' : 'rejected',
+            admin_reply: payloadItem.adminReply || null,
           }),
         });
-        if (res.ok) {
-          showToast('Testimoni baru berhasil ditambahkan!');
-          setIsEditModalOpen(false);
-          setEditingItem(null);
-          loadData();
-        } else {
-          alert('Gagal menambahkan testimoni.');
-        }
       }
     } catch (err) {
       console.error(err);
-      alert('Terjadi kesalahan saat menyimpan testimoni.');
-    } finally {
-      setIsSaving(false);
+      loadData();
     }
   };
 

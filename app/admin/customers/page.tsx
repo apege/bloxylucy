@@ -54,14 +54,17 @@ function CustomersContent() {
   const handleToggleBlacklist = async (cust: Customer) => {
     const action = cust.is_blacklisted ? 'membuka blokir' : 'mem-blacklist';
     if (confirm(`Apakah Anda yakin ingin ${action} akun @${cust.roblox_username}?`)) {
-      setLoading(true);
+      const newStatus = !cust.is_blacklisted;
+      // Optimistic instant UI update
+      setCustomers((prev) =>
+        prev.map((c) => (c.id === cust.id || c.roblox_username === cust.roblox_username ? { ...c, is_blacklisted: newStatus } : c))
+      );
+
       try {
         await toggleCustomerBlacklist(cust, cust.roblox_username);
-        await loadData();
       } catch (err) {
         console.error(err);
-      } finally {
-        setLoading(false);
+        loadData();
       }
     }
   };
@@ -72,33 +75,41 @@ function CustomersContent() {
       alert('Mohon masukkan username Roblox');
       return;
     }
-    setIsSubmitting(true);
+
+    const newCustomer: Customer = {
+      id: `c-manual-${Date.now()}`,
+      roblox_username: manualUsername.trim(),
+      phone: manualPhone.trim() || undefined,
+      roblox_user_id: manualRobloxUserId.trim() || undefined,
+      role: 'customer',
+      is_blacklisted: true,
+      total_orders: 0,
+      total_spent: 0,
+      created_at: new Date().toISOString(),
+    };
+
+    // Optimistic UI update
+    setCustomers((prev) => [newCustomer, ...prev]);
+    setShowAddModal(false);
+    setManualUsername('');
+    setManualPhone('');
+    setManualRobloxUserId('');
+
     try {
-      const res = await fetch('/api/customers', {
+      await fetch('/api/customers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          roblox_username: manualUsername.trim(),
-          phone: manualPhone.trim() || undefined,
-          roblox_user_id: manualRobloxUserId.trim() || undefined,
+          roblox_username: newCustomer.roblox_username,
+          phone: newCustomer.phone,
+          roblox_user_id: newCustomer.roblox_user_id,
           is_blacklisted: true,
           reason: manualReason.trim() || 'Indikasi penipuan atau penyalahgunaan',
         }),
       });
-      const json = await res.json();
-      if (json.success) {
-        setShowAddModal(false);
-        setManualUsername('');
-        setManualPhone('');
-        setManualRobloxUserId('');
-        await loadData();
-      } else {
-        alert(json.error || 'Gagal menambahkan blacklist');
-      }
     } catch (err: any) {
-      alert('Error: ' + err.message);
-    } finally {
-      setIsSubmitting(false);
+      console.error(err);
+      loadData();
     }
   };
 
