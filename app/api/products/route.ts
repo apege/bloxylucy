@@ -2,19 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { Product } from '@/lib/admin-types';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const category = searchParams.get('category');
     const activeOnly = searchParams.get('active_only') === 'true';
 
     let query = supabase.from('products').select('*').order('robux', { ascending: true });
 
     if (activeOnly) {
       query = query.eq('is_active', true);
-    }
-    if (category) {
-      query = query.eq('category', category);
     }
 
     const { data, error } = await query;
@@ -43,44 +42,66 @@ export async function POST(req: NextRequest) {
       is_popular = false,
       is_best_value = false,
       is_promo = false,
-      category = 'instant',
+      category = 'Robux',
       image_path = null,
     } = body;
 
-    if (!name || !robux || !price) {
+    if (!robux || !price) {
       return NextResponse.json(
-        { success: false, error: 'Nama paket, jumlah Robux, dan harga wajib diisi.' },
+        { success: false, error: 'Jumlah Robux dan harga wajib diisi.' },
         { status: 400 }
       );
     }
 
-    const newProductPayload = {
-      name,
-      robux: Number(robux),
-      price: Number(price),
-      original_price: original_price ? Number(original_price) : null,
+    const robuxNum = Math.max(1, Number(robux));
+    const priceNum = Math.max(0, Number(price));
+    const productName = name ? String(name).trim() : `${new Intl.NumberFormat('id-ID').format(robuxNum)} Robux`;
+
+    // Try full payload with all columns
+    const fullPayload: Record<string, any> = {
+      name: productName,
+      robux: robuxNum,
+      price: priceNum,
       is_active: Boolean(is_active),
-      is_popular: Boolean(is_popular),
-      is_best_value: Boolean(is_best_value),
-      is_promo: Boolean(is_promo),
-      category: category || 'instant',
-      image_path: image_path || null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
+    if (original_price) fullPayload.original_price = Number(original_price);
+    if (is_popular !== undefined) fullPayload.is_popular = Boolean(is_popular);
+    if (is_best_value !== undefined) fullPayload.is_best_value = Boolean(is_best_value);
+    if (is_promo !== undefined) fullPayload.is_promo = Boolean(is_promo);
+    if (category) fullPayload.category = category;
+    if (image_path) fullPayload.image_path = image_path;
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('products')
-      .insert(newProductPayload)
+      .insert(fullPayload)
       .select()
       .single();
 
+    // Resilient fallback if custom columns (category, is_popular, etc.) do not exist in DB yet
     if (error) {
-      console.warn('Supabase Insert Product warning:', error.message);
-      return NextResponse.json({
-        success: true,
-        data: { id: Date.now(), ...newProductPayload },
-      });
+      const corePayload = {
+        name: productName,
+        robux: robuxNum,
+        price: priceNum,
+        is_active: Boolean(is_active),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const retry = await supabase
+        .from('products')
+        .insert(corePayload)
+        .select()
+        .single();
+
+      if (retry.error) {
+        console.error('Supabase Insert Product error:', retry.error);
+        return NextResponse.json({ success: false, error: retry.error.message }, { status: 500 });
+      }
+
+      data = retry.data;
     }
 
     return NextResponse.json({ success: true, data }, { status: 201 });

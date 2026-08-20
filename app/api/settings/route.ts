@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { StoreSettings } from '@/lib/admin-types';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const DEFAULT_SETTINGS: StoreSettings = {
   store_name: 'BloxyLucy Top Up Robux',
   whatsapp_number: '6287816959979',

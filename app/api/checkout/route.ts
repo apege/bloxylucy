@@ -54,6 +54,56 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Check if user is in BloxyLucy blacklist (by username, Roblox User ID, or Phone/WhatsApp)
+    try {
+      let isBanned: any = null;
+
+      // 1. Check Username
+      const { data: bannedByName } = await supabase
+        .from('blacklists')
+        .select('roblox_username, reason')
+        .ilike('roblox_username', cleanUsername)
+        .maybeSingle();
+
+      if (bannedByName) {
+        isBanned = bannedByName;
+      }
+
+      // 2. Check Roblox User ID
+      if (!isBanned && finalRobloxUserId) {
+        const { data: bannedById } = await supabase
+          .from('blacklists')
+          .select('roblox_username, reason')
+          .eq('roblox_user_id', finalRobloxUserId)
+          .maybeSingle();
+
+        if (bannedById) isBanned = bannedById;
+      }
+
+      // 3. Check Phone / WA Number
+      if (!isBanned && cleanPhone) {
+        const { data: bannedByPhone } = await supabase
+          .from('blacklists')
+          .select('roblox_username, reason')
+          .ilike('phone', `%${cleanPhone.replace(/\D/g, '').slice(-9)}%`)
+          .maybeSingle();
+
+        if (bannedByPhone) isBanned = bannedByPhone;
+      }
+
+      if (isBanned) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Akun atau Nomor WhatsApp Anda telah di-blacklist (${isBanned.reason || 'Pelanggaran'}). Pesanan tidak dapat diproses.`,
+          },
+          { status: 403 }
+        );
+      }
+    } catch {
+      // Continue if table doesn't exist
+    }
+
     // Generate unique order code (BLX + 6 digits + 2 digits)
     const orderCode = `BLX${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 90 + 10)}`;
     const now = new Date();

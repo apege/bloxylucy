@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -12,6 +16,25 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // 0. Check if user is in BloxyLucy blacklist table
+    try {
+      const { data: blData } = await supabase
+        .from('blacklists')
+        .select('roblox_username, reason')
+        .ilike('roblox_username', username)
+        .maybeSingle();
+
+      if (blData) {
+        return NextResponse.json({
+          success: false,
+          isBlacklisted: true,
+          message: `Akun Roblox "${username}" telah di-blacklist oleh BloxyLucy (${blData.reason || 'Pelanggaran'}). Pesanan tidak dapat dilanjutkan.`,
+        });
+      }
+    } catch (err) {
+      console.warn('Blacklist table query notice:', err);
+    }
+
     // 1. Get Roblox User ID from Username
     const userRes = await fetch('https://users.roblox.com/v1/usernames/users', {
       method: 'POST',
@@ -46,6 +69,42 @@ export async function GET(request: NextRequest) {
     const userId = user.id;
     const exactUsername = user.name;
     const displayName = user.displayName;
+
+    // Check exact username in blacklist too
+    try {
+      const { data: blDataExact } = await supabase
+        .from('blacklists')
+        .select('roblox_username, reason')
+        .ilike('roblox_username', exactUsername)
+        .maybeSingle();
+
+      if (blDataExact) {
+        return NextResponse.json({
+          success: false,
+          isBlacklisted: true,
+          message: `Akun Roblox "${exactUsername}" telah di-blacklist oleh BloxyLucy (${blDataExact.reason || 'Pelanggaran'}). Pesanan tidak dapat dilanjutkan.`,
+        });
+      }
+
+      // Check resolved Roblox User ID in blacklist too
+      if (userId) {
+        const { data: blDataId } = await supabase
+          .from('blacklists')
+          .select('roblox_username, reason')
+          .eq('roblox_user_id', String(userId))
+          .maybeSingle();
+
+        if (blDataId) {
+          return NextResponse.json({
+            success: false,
+            isBlacklisted: true,
+            message: `Akun Roblox dengan ID ${userId} ("${exactUsername}") telah di-blacklist oleh BloxyLucy (${blDataId.reason || 'Pelanggaran'}). Pesanan tidak dapat dilanjutkan.`,
+          });
+        }
+      }
+    } catch {
+      // Continue
+    }
 
     // 2. Fetch Avatar Headshot Thumbnail
     let avatarUrl = '';

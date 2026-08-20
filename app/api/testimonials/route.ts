@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { Testimonial } from '@/lib/admin-types';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -36,23 +39,35 @@ export async function GET(req: NextRequest) {
     }
 
     let items: Testimonial[] = data.map((d: any) => {
-      const robux = d.order_code ? orderRobuxMap[d.order_code] : null;
-      const robuxPackage = robux
-        ? `${new Intl.NumberFormat('id-ID').format(robux)} Robux`
-        : null;
+      const dbRobux = d.order_code ? orderRobuxMap[d.order_code] : null;
+      let finalRobuxPackage: string | undefined = undefined;
+
+      if (dbRobux) {
+        finalRobuxPackage = `${new Intl.NumberFormat('id-ID').format(dbRobux)} Robux`;
+      } else if (d.order_code) {
+        const codeStr = String(d.order_code).trim();
+        if (codeStr.toLowerCase().includes('robux')) {
+          finalRobuxPackage = codeStr;
+        } else if (/^\d+$/.test(codeStr.replace(/\./g, ''))) {
+          const num = Number(codeStr.replace(/\./g, ''));
+          if (num > 0) {
+            finalRobuxPackage = `${new Intl.NumberFormat('id-ID').format(num)} Robux`;
+          }
+        }
+      }
 
       return {
         id: d.id,
         order_code: d.order_code || '',
         username: d.name || 'Pembeli',
         rating: d.rating || 5,
-        robuxPackage: robuxPackage || undefined,
+        robuxPackage: finalRobuxPackage,
         comment: d.message || '',
         timeAgo: 'Baru saja',
         avatarLetter: (d.name || 'U')[0].toUpperCase(),
         hasProof: Boolean(d.image_path),
         proofImage: d.image_path || null,
-        proofAmount: robuxPackage || undefined,
+        proofAmount: finalRobuxPackage,
         adminReply: d.admin_reply || null,
         is_active: d.status === 'approved',
         created_at: d.created_at || new Date().toISOString(),
