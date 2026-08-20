@@ -47,10 +47,14 @@ export default function Navbar({ cartCount, onOpenCart }: NavbarProps) {
           <div className="flex items-center gap-3">
             <div className="relative group cursor-pointer">
               <div className="relative w-11 h-11 md:w-13 md:h-13 rounded-full overflow-hidden border-2 border-pink-300 bg-pink-50 flex items-center justify-center shadow-sm">
-                <img
+                <Image
                   src={logoPath}
                   alt={storeName}
+                  width={52}
+                  height={52}
+                  priority
                   className="object-cover w-full h-full scale-105"
+                  unoptimized={logoPath.startsWith('http')}
                 />
               </div>
             </div>

@@ -21,10 +21,9 @@ export default function NominalSection({
 
   React.useEffect(() => {
     Promise.all([
-      fetch('/api/products?active_only=true', { cache: 'no-store' }).then((r) => r.json()).catch(() => null),
-      fetch('/api/settings', { cache: 'no-store' }).then((r) => r.json()).catch(() => null),
-      fetch('/api/orders', { cache: 'no-store' }).then((r) => r.json()).catch(() => null),
-    ]).then(([prodRes, settingsRes, ordersRes]) => {
+      fetch('/api/products?active_only=true').then((r) => r.json()).catch(() => null),
+      fetch('/api/settings').then((r) => r.json()).catch(() => null),
+    ]).then(([prodRes, settingsRes]) => {
       let rawProducts: any[] = [];
       if (prodRes?.success && Array.isArray(prodRes.data)) {
         rawProducts = prodRes.data;
@@ -35,19 +34,8 @@ export default function NominalSection({
       const promoActive = settings?.promo_active ?? true;
       const promoAmount = settings?.promo_robux_amount ?? 2200;
 
-      // 2. Populer: automatically calculated from most ordered Robux packages in database
-      const orders = ordersRes?.success && Array.isArray(ordersRes.data) ? ordersRes.data : [];
-      const counts: Record<number, number> = {};
-      orders.forEach((o: any) => {
-        if (o.robux) {
-          counts[o.robux] = (counts[o.robux] || 0) + 1;
-        }
-      });
-      const sortedByCount = Object.entries(counts)
-        .sort((a, b) => b[1] - a[1])
-        .map(([amt]) => Number(amt));
-      
-      const popularSet = new Set(sortedByCount.length > 0 ? sortedByCount.slice(0, 2) : [1000, 2200]);
+      // 2. Popular packages default
+      const popularSet = new Set([1000, 2200]);
 
       const mapped: RobuxItem[] = rawProducts.map((p: any) => {
         const amt = Number(p.robux);
@@ -66,7 +54,9 @@ export default function NominalSection({
         };
       });
 
-      setItems(mapped);
+      if (mapped.length > 0) {
+        setItems(mapped);
+      }
     });
   }, []);
 

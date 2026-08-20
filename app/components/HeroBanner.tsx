@@ -86,10 +86,14 @@ export default function HeroBanner() {
         {/* Banner Image Background in Customer Hero Card */}
         {settings.banner_image_path && (
           <div className="absolute inset-0 z-0 overflow-hidden rounded-3xl pointer-events-none">
-            <img
+            <Image
               src={settings.banner_image_path}
               alt="Promo Banner Background"
-              className="w-full h-full object-cover object-center opacity-75 transition-opacity duration-300"
+              fill
+              priority
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
+              className="object-cover object-center opacity-75 transition-opacity duration-300"
+              unoptimized={settings.banner_image_path.startsWith('http')}
             />
             {/* Responsive Gradient Mask: atas-ke-bawah di layar HP, kiri-ke-kanan di layar desktop */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#ffeef4]/95 via-[#ffeef4]/80 to-[#ffeef4]/30 lg:bg-gradient-to-r lg:from-[#ffeef4]/95 lg:via-[#ffeef4]/80 lg:to-[#ffeef4]/30" />
@@ -218,7 +222,9 @@ export default function HeroBanner() {
                     alt="Store Mascot"
                     width={36}
                     height={36}
+                    priority
                     className="object-cover w-full h-full"
+                    unoptimized={Boolean(settings.logo_image_path?.startsWith('http'))}
                   />
                 </div>
                 <div className="text-left">

@@ -9,7 +9,7 @@ import {
 
 export default function PromoBannerSection() {
   return (
-    <section id="cara-order" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <section id="cara-order" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 content-auto">
       <div className="rounded-3xl border border-pink-100 bg-white p-5 sm:p-8 md:p-10 shadow-xs space-y-7 sm:space-y-8">
         
         {/* Header Title */}

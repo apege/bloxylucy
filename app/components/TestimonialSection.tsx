@@ -194,7 +194,7 @@ export default function TestimonialSection() {
   };
 
   return (
-    <section id="testimoni" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+    <section id="testimoni" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 content-auto">
       <div className="overflow-hidden rounded-3xl border border-pink-200 bg-white shadow-xs">
         
         {/* Header Bar */}
@@ -292,7 +292,13 @@ export default function TestimonialSection() {
                       {/* Proof Photo */}
                       {t.proofImage && (
                         <div className="relative w-28 h-28 rounded-xl overflow-hidden border border-pink-200 bg-zinc-50 shadow-2xs">
-                          <img src={t.proofImage} alt="Foto Bukti" className="w-full h-full object-cover" />
+                          <img
+                            src={t.proofImage}
+                            alt="Foto Bukti"
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full h-full object-cover"
+                          />
                         </div>
                       )}
                     </div>

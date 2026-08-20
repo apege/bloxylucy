@@ -1,9 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import Navbar from './components/Navbar';
-import SakuraFalling from './components/SakuraFalling';
 import HeroBanner from './components/HeroBanner';
+
+const SakuraFalling = dynamic(() => import('./components/SakuraFalling'), {
+  ssr: false,
+});
 import FeaturesBar from './components/FeaturesBar';
 import AccountDataSection from './components/AccountDataSection';
 import NominalSection from './components/NominalSection';
