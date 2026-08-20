@@ -250,20 +250,20 @@ export default function HeroBanner() {
 
               <div className="space-y-2.5 text-xs">
                 <div className="flex items-center gap-2 text-zinc-700 font-semibold">
-                  <div className="w-5 h-5 rounded-md bg-pink-50 text-pink-600 flex items-center justify-center font-bold text-[10px]">
-                    ⚡
+                  <div className="w-5 h-5 rounded-md bg-pink-50 text-pink-600 flex items-center justify-center">
+                    <Zap className="w-3.5 h-3.5 text-pink-500 fill-pink-500" />
                   </div>
                   <span>Proses Cepat 1-5 Menit</span>
                 </div>
                 <div className="flex items-center gap-2 text-zinc-700 font-semibold">
-                  <div className="w-5 h-5 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-[10px]">
-                    🛡️
+                  <div className="w-5 h-5 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                   </div>
                   <span>100% Robux Legal &amp; Aman</span>
                 </div>
                 <div className="flex items-center gap-2 text-zinc-700 font-semibold">
-                  <div className="w-5 h-5 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-[10px]">
-                    💰
+                  <div className="w-5 h-5 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
                   </div>
                   <span>Garansi Uang Kembali 100%</span>
                 </div>

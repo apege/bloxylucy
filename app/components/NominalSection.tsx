@@ -20,29 +20,64 @@ export default function NominalSection({
   const [activeFilter, setActiveFilter] = useState<'all' | 'promo' | 'popular' | 'sultan'>('all');
 
   React.useEffect(() => {
-    fetch('/api/products?active_only=true')
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-          const mapped: RobuxItem[] = json.data.map((p: any) => ({
-            id: `rbx-${p.id}`,
-            amount: p.robux,
-            price: p.price,
-            originalPrice: p.original_price,
-            isPromo: Boolean(p.is_promo),
-            isPopular: Boolean(p.is_popular),
-            isBestValue: Boolean(p.is_best_value),
-          }));
-          setItems(mapped);
+    Promise.all([
+      fetch('/api/products?active_only=true', { cache: 'no-store' }).then((r) => r.json()).catch(() => null),
+      fetch('/api/settings', { cache: 'no-store' }).then((r) => r.json()).catch(() => null),
+      fetch('/api/orders', { cache: 'no-store' }).then((r) => r.json()).catch(() => null),
+    ]).then(([prodRes, settingsRes, ordersRes]) => {
+      let rawProducts: any[] = [];
+      if (prodRes?.success && Array.isArray(prodRes.data)) {
+        rawProducts = prodRes.data;
+      }
+
+      // 1. Promo: automatically matches active promo nominal in Store Settings
+      const settings = settingsRes?.success ? settingsRes.data : null;
+      const promoActive = settings?.promo_active ?? true;
+      const promoAmount = settings?.promo_robux_amount ?? 2200;
+
+      // 2. Populer: automatically calculated from most ordered Robux packages in database
+      const orders = ordersRes?.success && Array.isArray(ordersRes.data) ? ordersRes.data : [];
+      const counts: Record<number, number> = {};
+      orders.forEach((o: any) => {
+        if (o.robux) {
+          counts[o.robux] = (counts[o.robux] || 0) + 1;
         }
-      })
-      .catch((err) => console.warn('Fetch products notice:', err));
+      });
+      const sortedByCount = Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([amt]) => Number(amt));
+      
+      const popularSet = new Set(sortedByCount.length > 0 ? sortedByCount.slice(0, 2) : [1000, 2200]);
+
+      const mapped: RobuxItem[] = rawProducts.map((p: any) => {
+        const amt = Number(p.robux);
+        const isPromo = promoActive && amt === promoAmount;
+        const isPopular = !isPromo && popularSet.has(amt);
+        const isSultan = amt >= 10000;
+
+        return {
+          id: `rbx-${p.id}`,
+          amount: amt,
+          price: Number(p.price),
+          originalPrice: p.original_price ? Number(p.original_price) : undefined,
+          isPromo,
+          isPopular,
+          isBestValue: isSultan,
+        };
+      });
+
+      setItems(mapped);
+    });
   }, []);
 
+  const popularCount = items.filter((i) => i.isPopular).length;
+  const promoCount = items.filter((i) => i.isPromo).length;
+  const sultanCount = items.filter((i) => i.isBestValue || i.amount >= 10000).length;
+
   const filteredItems = items.filter((item) => {
-    if (activeFilter === 'promo') return item.isPromo || item.price <= 50000;
+    if (activeFilter === 'promo') return item.isPromo;
     if (activeFilter === 'popular') return item.isPopular;
-    if (activeFilter === 'sultan') return item.amount >= 10500;
+    if (activeFilter === 'sultan') return item.isBestValue || item.amount >= 10000;
     return true;
   });
 
@@ -79,7 +114,7 @@ export default function NominalSection({
             </div>
           </div>
 
-          {/* Filter Tabs */}
+          {/* Filter Tabs with Dynamic Realtime Counts */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 no-scrollbar">
             <button
               type="button"
@@ -90,7 +125,7 @@ export default function NominalSection({
                   : 'bg-zinc-100 text-zinc-600 hover:text-pink-600 hover:bg-pink-50'
               }`}
             >
-              Semua ({ROBUX_PRICELIST.length})
+              Semua ({items.length})
             </button>
             <button
               type="button"
@@ -102,7 +137,7 @@ export default function NominalSection({
               }`}
             >
               <Flame className="w-3.5 h-3.5 text-orange-500" />
-              Populer
+              Populer ({popularCount})
             </button>
             <button
               type="button"
@@ -114,7 +149,7 @@ export default function NominalSection({
               }`}
             >
               <Zap className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
-              Promo
+              Promo ({promoCount})
             </button>
             <button
               type="button"
@@ -126,7 +161,7 @@ export default function NominalSection({
               }`}
             >
               <Crown className="w-3.5 h-3.5 text-amber-500" />
-              Paket Sultan
+              Paket Sultan ({sultanCount})
             </button>
           </div>
         </div>

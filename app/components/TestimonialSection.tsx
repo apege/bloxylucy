@@ -48,10 +48,10 @@ export default function TestimonialSection() {
 
   // 1. Fetch active testimonials & check review token on load
   useEffect(() => {
-    fetch('/api/testimonials?active_only=true')
+    fetch('/api/testimonials?active_only=true', { cache: 'no-store' })
       .then((res) => res.json())
       .then((json) => {
-        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+        if (json.success && Array.isArray(json.data)) {
           setTestimonials(json.data);
         }
       })

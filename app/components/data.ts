@@ -29,19 +29,6 @@ export interface Testimonial {
   created_at?: string;
 }
 
-export const ROBUX_PRICELIST: RobuxItem[] = [
-  { id: 'rbx-1800', amount: 1800, price: 35000, isPromo: true },
-  { id: 'rbx-2200', amount: 2200, price: 45000, isPopular: true },
-  { id: 'rbx-2700', amount: 2700, price: 50000 },
-  { id: 'rbx-3200', amount: 3200, price: 60000 },
-  { id: 'rbx-3700', amount: 3700, price: 70000 },
-  { id: 'rbx-4200', amount: 4200, price: 80000 },
-  { id: 'rbx-4700', amount: 4700, price: 90000 },
-  { id: 'rbx-5500', amount: 5500, price: 100000, isPopular: true },
-  { id: 'rbx-10500', amount: 10500, price: 200000, isBestValue: true },
-  { id: 'rbx-15500', amount: 15500, price: 300000 },
-  { id: 'rbx-20500', amount: 20500, price: 400000 },
-  { id: 'rbx-30500', amount: 30500, price: 500000, isBestValue: true },
-];
+export const ROBUX_PRICELIST: RobuxItem[] = [];
 
 export const INITIAL_TESTIMONIALS: Testimonial[] = [];

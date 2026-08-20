@@ -123,121 +123,154 @@ export default function OrderSummaryBar({
     router.push(`/checkout?username=${encodedUser}&amount=${totalRobux}&price=${grandTotal}&userId=${encodedUid}`);
   };
 
-  if (!selectedItem && cart.length === 0) return null;
+  const showBottomBar = Boolean(selectedItem || cart.length > 0);
 
   return (
     <>
       {/* Sticky Bottom Bar Matching Image 1 */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 border-t border-pink-100 backdrop-blur-md px-4 sm:px-8 py-3 shadow-[0_-4px_25px_rgba(236,72,153,0.08)]">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          
-          {/* Summary Details Left */}
-          <div className="flex items-center gap-3.5 w-full sm:w-auto justify-between sm:justify-start">
-            <div className="text-left">
-              <span className="text-[11px] text-zinc-400 block font-medium">Total Pesanan</span>
-              <span className="text-sm sm:text-base font-black text-zinc-900">
-                {formatRobux(totalRobux)} Robux
-              </span>
-            </div>
+      {showBottomBar && (
+        <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 border-t border-pink-100 backdrop-blur-md px-4 sm:px-8 py-3 shadow-[0_-4px_25px_rgba(236,72,153,0.08)] animate-fadeIn">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+            
+            {/* Summary Details Left */}
+            <div className="flex items-center gap-3.5 w-full sm:w-auto justify-between sm:justify-start">
+              <div className="text-left">
+                <span className="text-[11px] text-zinc-400 block font-medium">Total Pesanan</span>
+                <span className="text-sm sm:text-base font-black text-zinc-900">
+                  {formatRobux(totalRobux)} Robux
+                </span>
+              </div>
 
-            <div className="text-base sm:text-xl font-black text-pink-600 sm:ml-4">
-              {formatRupiah(grandTotal)}
-            </div>
+              <div className="text-base sm:text-xl font-black text-pink-600 sm:ml-4">
+                {formatRupiah(grandTotal)}
+              </div>
 
-            {isCartCheckout && (
-              <span className="text-xs bg-pink-50 text-pink-700 border border-pink-200 px-2 py-0.5 rounded-lg font-bold">
-                {cart.length} Item
-              </span>
-            )}
-          </div>
-
-          {/* Action Button Right */}
-          <div className="flex items-center gap-2.5 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={handleProceedCheckout}
-              className={`flex-1 sm:flex-none px-8 py-3 rounded-2xl font-extrabold text-sm text-white flex items-center justify-center gap-2 shadow-xs transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer ${
-                paymentChannel === 'whatsapp'
-                  ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
-                  : 'bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 shadow-pink-500/20'
-              }`}
-            >
-              {paymentChannel === 'whatsapp' ? (
-                <>
-                  <MessageCircle className="w-4 h-4" />
-                  <span>Beli via WhatsApp</span>
-                </>
-              ) : (
-                <>
-                  <Zap className="w-4 h-4 fill-yellow-200 text-yellow-200" />
-                  <span>Bayar Sekarang</span>
-                </>
+              {isCartCheckout && (
+                <span className="text-xs bg-pink-50 text-pink-700 border border-pink-200 px-2 py-0.5 rounded-lg font-bold">
+                  {cart.length} Item
+                </span>
               )}
-            </button>
-          </div>
+            </div>
 
+            {/* Action Button Right */}
+            <div className="flex items-center gap-2.5 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={handleProceedCheckout}
+                className={`flex-1 sm:flex-none px-8 py-3 rounded-2xl font-extrabold text-sm text-white flex items-center justify-center gap-2 shadow-xs transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer ${
+                  paymentChannel === 'whatsapp'
+                    ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
+                    : 'bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 shadow-pink-500/20'
+                }`}
+              >
+                {paymentChannel === 'whatsapp' ? (
+                  <>
+                    <MessageCircle className="w-4 h-4" />
+                    <span>Beli via WhatsApp</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-4 h-4 fill-yellow-200 text-yellow-200" />
+                    <span>Bayar Sekarang</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Cart Drawer Modal */}
       {isOpenCart && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fadeIn">
-          <div className="relative w-full max-w-md rounded-3xl border border-pink-200 bg-white p-6 shadow-xl space-y-4">
+          <div className="relative w-full max-w-md rounded-3xl border border-pink-200 bg-white p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-pink-100">
               <div className="flex items-center gap-2 text-zinc-900 font-bold text-base">
-                <ShoppingCart className="w-5 h-5 text-pink-600" />
+                <div className="w-8 h-8 rounded-xl bg-pink-50 text-pink-600 flex items-center justify-center">
+                  <ShoppingCart className="w-4 h-4" />
+                </div>
                 <span>Keranjang Belanja BloxyLucy</span>
               </div>
               <button
                 onClick={onCloseCart}
-                className="p-1 rounded-lg text-zinc-400 hover:text-zinc-700 cursor-pointer"
+                className="w-8 h-8 rounded-full text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 flex items-center justify-center cursor-pointer transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             {cart.length === 0 ? (
-              <div className="py-8 text-center space-y-2">
-                <p className="text-sm text-zinc-500">Keranjang masih kosong</p>
-                <p className="text-xs text-pink-600">Pilih paket Robux di pricelist dan klik tombol '+'</p>
+              <div className="py-8 text-center space-y-3">
+                <div className="w-14 h-14 rounded-full bg-pink-50 text-pink-500 flex items-center justify-center mx-auto">
+                  <ShoppingCart className="w-7 h-7 stroke-[1.5]" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-zinc-800">Keranjang masih kosong</p>
+                  <p className="text-xs text-zinc-500">Pilih paket Robux di katalog pricelist lalu klik tombol &apos;+&apos; untuk menambahkan.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onCloseCart();
+                    const el = document.getElementById('pricelist');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-pink-50 hover:bg-pink-100 text-pink-600 text-xs font-bold transition-colors cursor-pointer border border-pink-200"
+                >
+                  Lihat Katalog Pricelist
+                </button>
               </div>
             ) : (
-              <div className="space-y-2.5 max-h-60 overflow-y-auto">
-                {cart.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between p-3 rounded-xl bg-pink-50/50 border border-pink-100 text-xs"
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-zinc-500">Daftar Paket ({cart.length} item):</span>
+                  <button
+                    type="button"
+                    onClick={onClearCart}
+                    className="text-[11px] font-bold text-rose-600 hover:underline cursor-pointer"
                   >
-                    <div>
-                      <h5 className="font-bold text-zinc-900">{formatRobux(item.amount)} Robux</h5>
-                      <span className="text-pink-600 font-bold">{formatRupiah(item.price)}</span>
-                    </div>
-                    <button
-                      onClick={() => onRemoveFromCart(idx)}
-                      className="text-rose-600 hover:text-rose-700 text-xs font-bold cursor-pointer"
+                    Kosongkan Semua
+                  </button>
+                </div>
+
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                  {cart.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-3 rounded-2xl bg-pink-50/50 border border-pink-100 text-xs"
                     >
-                      Hapus
-                    </button>
-                  </div>
-                ))}
+                      <div className="space-y-0.5">
+                        <h5 className="font-extrabold text-zinc-900">{formatRobux(item.amount)} Robux</h5>
+                        <span className="text-pink-600 font-bold">{formatRupiah(item.price)}</span>
+                      </div>
+                      <button
+                        onClick={() => onRemoveFromCart(idx)}
+                        className="px-2.5 py-1 rounded-lg text-rose-600 hover:bg-rose-50 text-xs font-bold cursor-pointer transition-colors"
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-3 border-t border-pink-100 flex items-center justify-between font-bold">
+                  <span className="text-zinc-600 text-xs">Total Pembayaran:</span>
+                  <span className="text-lg font-black text-pink-600">{formatRupiah(grandTotal)}</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    onCloseCart();
+                    handleProceedCheckout();
+                  }}
+                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-black text-sm shadow-md shadow-pink-500/20 cursor-pointer transition-all"
+                >
+                  Lanjut ke Pembayaran
+                </button>
               </div>
             )}
-
-            <div className="pt-3 border-t border-pink-100 flex items-center justify-between font-bold">
-              <span className="text-zinc-600 text-xs">Total:</span>
-              <span className="text-lg text-pink-600">{formatRupiah(grandTotal)}</span>
-            </div>
-
-            <button
-              onClick={() => {
-                onCloseCart();
-                handleProceedCheckout();
-              }}
-              disabled={cart.length === 0}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold text-sm shadow-xs disabled:opacity-50 cursor-pointer"
-            >
-              Lanjut ke Pembayaran
-            </button>
           </div>
         </div>
       )}

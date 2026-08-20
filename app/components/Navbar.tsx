@@ -136,21 +136,21 @@ export default function Navbar({ cartCount, onOpenCart }: NavbarProps) {
             onClick={() => setMobileMenuOpen(false)}
             className="block px-3 py-2 rounded-lg text-zinc-700 hover:bg-pink-50 hover:text-pink-600 text-sm font-semibold"
           >
-            🔥 Pricelist Robux
+            Pricelist Robux
           </a>
           <a
             href="#cara-order"
             onClick={() => setMobileMenuOpen(false)}
             className="block px-3 py-2 rounded-lg text-zinc-700 hover:bg-pink-50 hover:text-pink-600 text-sm font-semibold"
           >
-            📝 Cara Order
+            Cara Order
           </a>
           <a
             href="#testimoni"
             onClick={() => setMobileMenuOpen(false)}
             className="block px-3 py-2 rounded-lg text-zinc-700 hover:bg-pink-50 hover:text-pink-600 text-sm font-semibold"
           >
-            ⭐ Testimoni Member
+            Testimoni Member
           </a>
           <a
             href="https://wa.me/6287816959979"

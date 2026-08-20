@@ -224,13 +224,13 @@ function CheckoutContent() {
           {/* Info Status Pesanan */}
           <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 text-emerald-950 text-xs space-y-1 text-left">
             <p className="font-black flex items-center gap-1.5 text-emerald-800">
-              <span>🚀 Pesanan Sedang Diproses Admin</span>
+              <span>Pesanan Sedang Diproses Admin</span>
             </p>
             <p className="text-[11px] text-emerald-700 leading-relaxed font-medium">
               Data pembayaran dan akun kamu sudah berhasil diterima. Admin BloxyLucy sedang memproses pengiriman Robux ke akun <strong>@{username}</strong>.
             </p>
             <p className="text-[10px] text-emerald-600 pt-1 font-semibold">
-              ⏱️ Estimasi waktu pengiriman: 5 - 10 menit.
+              Estimasi waktu pengiriman: 5 - 10 menit.
             </p>
           </div>
 
