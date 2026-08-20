@@ -183,13 +183,15 @@ export async function getProducts(params?: { active_only?: boolean; category?: s
       }
     }
   } catch (err) {
-    console.warn('API fetch products error:', err);
+    console.warn('API fetch products error, falling back to cache:', err);
   }
 
   return getLocal<Product[]>(STORAGE_KEY_PRODUCTS, INITIAL_MOCK_PRODUCTS);
 }
 
 export async function saveProduct(product: Partial<Product>): Promise<Product> {
+  const current = getLocal<Product[]>(STORAGE_KEY_PRODUCTS, INITIAL_MOCK_PRODUCTS);
+
   try {
     if (product.id) {
       const res = await fetch(`/api/products/${product.id}`, {
@@ -200,7 +202,6 @@ export async function saveProduct(product: Partial<Product>): Promise<Product> {
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data) {
-          const current = await getProducts();
           const updated = current.map((p) => (p.id === product.id ? json.data : p));
           setLocal(STORAGE_KEY_PRODUCTS, updated);
           return json.data;
@@ -215,7 +216,6 @@ export async function saveProduct(product: Partial<Product>): Promise<Product> {
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data) {
-          const current = await getProducts();
           const updated = [...current, json.data];
           setLocal(STORAGE_KEY_PRODUCTS, updated);
           return json.data;
@@ -226,7 +226,6 @@ export async function saveProduct(product: Partial<Product>): Promise<Product> {
     console.warn('API save product error:', err);
   }
 
-  const current = await getProducts();
   let updated: Product[];
   if (product.id) {
     updated = current.map((p) => (p.id === product.id ? ({ ...p, ...product } as Product) : p));
@@ -247,24 +246,20 @@ export async function saveProduct(product: Partial<Product>): Promise<Product> {
 }
 
 export async function deleteProduct(id: number): Promise<boolean> {
+  const current = getLocal<Product[]>(STORAGE_KEY_PRODUCTS, INITIAL_MOCK_PRODUCTS);
+  const updated = current.filter((p) => p.id !== id);
+  setLocal(STORAGE_KEY_PRODUCTS, updated);
+
   try {
     const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
     if (res.ok) {
       const json = await res.json();
-      if (json.success) {
-        const current = await getProducts();
-        const updated = current.filter((p) => p.id !== id);
-        setLocal(STORAGE_KEY_PRODUCTS, updated);
-        return true;
-      }
+      return Boolean(json.success);
     }
   } catch (err) {
     console.warn('API delete product error:', err);
   }
 
-  const current = await getProducts();
-  const updated = current.filter((p) => p.id !== id);
-  setLocal(STORAGE_KEY_PRODUCTS, updated);
   return true;
 }
 
@@ -283,28 +278,35 @@ export async function getCustomers(params?: { blacklist_only?: boolean }): Promi
       }
     }
   } catch (err) {
-    console.warn('API fetch customers error:', err);
+    console.warn('API fetch customers error, falling back to cache:', err);
   }
 
   return getLocal<Customer[]>(STORAGE_KEY_CUSTOMERS, INITIAL_MOCK_CUSTOMERS);
 }
 
 export async function toggleCustomerBlacklist(
-  idOrCust: string | { id: string; roblox_username?: string; roblox_user_id?: string; phone?: string },
+  idOrCust: string | { id: string; roblox_username?: string; roblox_user_id?: string; phone?: string; is_blacklisted?: boolean },
   usernameParam?: string
 ): Promise<boolean> {
-  const current = await getCustomers();
+  const current = getLocal<Customer[]>(STORAGE_KEY_CUSTOMERS, INITIAL_MOCK_CUSTOMERS);
   const id = typeof idOrCust === 'string' ? idOrCust : idOrCust.id;
   const username = typeof idOrCust === 'string' ? usernameParam : idOrCust.roblox_username;
   const roblox_user_id = typeof idOrCust === 'object' ? idOrCust.roblox_user_id : undefined;
   const phone = typeof idOrCust === 'object' ? idOrCust.phone : undefined;
 
   const target = current.find((c) => c.id === id || (username && c.roblox_username === username));
-  const newBlacklist = !target?.is_blacklisted;
+  const newBlacklist = typeof idOrCust === 'object' && idOrCust.is_blacklisted !== undefined
+    ? !idOrCust.is_blacklisted
+    : !target?.is_blacklisted;
   const targetUsername = username || target?.roblox_username || (id.startsWith('c-') ? id.replace('c-', '') : id);
 
+  const updated = current.map((c) =>
+    c.id === id || c.roblox_username === targetUsername ? { ...c, is_blacklisted: newBlacklist } : c
+  );
+  setLocal(STORAGE_KEY_CUSTOMERS, updated);
+
   try {
-    const res = await fetch('/api/customers', {
+    await fetch('/api/customers', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -315,22 +317,11 @@ export async function toggleCustomerBlacklist(
         is_blacklisted: newBlacklist,
       }),
     });
-    if (res.ok) {
-      const json = await res.json();
-      if (json.success) {
-        const refreshed = await getCustomers();
-        setLocal(STORAGE_KEY_CUSTOMERS, refreshed);
-        return true;
-      }
-    }
+    return true;
   } catch (err) {
     console.warn('API toggle blacklist error:', err);
   }
 
-  const updated = current.map((c) =>
-    c.id === id || c.roblox_username === targetUsername ? { ...c, is_blacklisted: newBlacklist } : c
-  );
-  setLocal(STORAGE_KEY_CUSTOMERS, updated);
   return true;
 }
 
