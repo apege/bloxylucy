@@ -174,10 +174,10 @@ export async function getProducts(params?: { active_only?: boolean; category?: s
       url += `?${sp.toString()}`;
     }
 
-    const res = await fetch(url);
+    const res = await fetch(url, { cache: 'no-store' });
     if (res.ok) {
       const json = await res.json();
-      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+      if (json.success && Array.isArray(json.data)) {
         setLocal(STORAGE_KEY_PRODUCTS, json.data);
         return json.data;
       }
@@ -248,7 +248,16 @@ export async function saveProduct(product: Partial<Product>): Promise<Product> {
 
 export async function deleteProduct(id: number): Promise<boolean> {
   try {
-    await fetch(`/api/products/${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success) {
+        const current = await getProducts();
+        const updated = current.filter((p) => p.id !== id);
+        setLocal(STORAGE_KEY_PRODUCTS, updated);
+        return true;
+      }
+    }
   } catch (err) {
     console.warn('API delete product error:', err);
   }
@@ -265,10 +274,10 @@ export async function getCustomers(params?: { blacklist_only?: boolean }): Promi
     let url = '/api/customers';
     if (params?.blacklist_only) url += '?blacklist_only=true';
 
-    const res = await fetch(url);
+    const res = await fetch(url, { cache: 'no-store' });
     if (res.ok) {
       const json = await res.json();
-      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+      if (json.success && Array.isArray(json.data)) {
         setLocal(STORAGE_KEY_CUSTOMERS, json.data);
         return json.data;
       }
@@ -280,23 +289,46 @@ export async function getCustomers(params?: { blacklist_only?: boolean }): Promi
   return getLocal<Customer[]>(STORAGE_KEY_CUSTOMERS, INITIAL_MOCK_CUSTOMERS);
 }
 
-export async function toggleCustomerBlacklist(id: string): Promise<boolean> {
+export async function toggleCustomerBlacklist(
+  idOrCust: string | { id: string; roblox_username?: string; roblox_user_id?: string; phone?: string },
+  usernameParam?: string
+): Promise<boolean> {
   const current = await getCustomers();
-  const target = current.find((c) => c.id === id);
+  const id = typeof idOrCust === 'string' ? idOrCust : idOrCust.id;
+  const username = typeof idOrCust === 'string' ? usernameParam : idOrCust.roblox_username;
+  const roblox_user_id = typeof idOrCust === 'object' ? idOrCust.roblox_user_id : undefined;
+  const phone = typeof idOrCust === 'object' ? idOrCust.phone : undefined;
+
+  const target = current.find((c) => c.id === id || (username && c.roblox_username === username));
   const newBlacklist = !target?.is_blacklisted;
+  const targetUsername = username || target?.roblox_username || (id.startsWith('c-') ? id.replace('c-', '') : id);
 
   try {
-    await fetch('/api/customers', {
+    const res = await fetch('/api/customers', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, is_blacklisted: newBlacklist }),
+      body: JSON.stringify({
+        id,
+        roblox_username: targetUsername,
+        roblox_user_id: roblox_user_id || target?.roblox_user_id,
+        phone: phone || target?.phone,
+        is_blacklisted: newBlacklist,
+      }),
     });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success) {
+        const refreshed = await getCustomers();
+        setLocal(STORAGE_KEY_CUSTOMERS, refreshed);
+        return true;
+      }
+    }
   } catch (err) {
     console.warn('API toggle blacklist error:', err);
   }
 
   const updated = current.map((c) =>
-    c.id === id ? { ...c, is_blacklisted: newBlacklist } : c
+    c.id === id || c.roblox_username === targetUsername ? { ...c, is_blacklisted: newBlacklist } : c
   );
   setLocal(STORAGE_KEY_CUSTOMERS, updated);
   return true;
@@ -305,7 +337,7 @@ export async function toggleCustomerBlacklist(id: string): Promise<boolean> {
 // 4. SETTINGS API
 export async function getStoreSettings(): Promise<StoreSettings> {
   try {
-    const res = await fetch('/api/settings');
+    const res = await fetch('/api/settings', { cache: 'no-store' });
     if (res.ok) {
       const json = await res.json();
       if (json.success && json.data) {
