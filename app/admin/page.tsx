@@ -89,7 +89,6 @@ export default function AdminDashboardPage() {
           <div className="space-y-1.5">
             <h1 className="text-2xl sm:text-3xl font-black text-zinc-900 tracking-tight flex items-center gap-2 flex-wrap">
               <span>Selamat Datang di Panel Admin!</span>
-              <span className="text-xl sm:text-2xl">🌸</span>
             </h1>
             <p className="text-xs sm:text-sm text-zinc-500 font-medium leading-relaxed max-w-xl">
               Pantau transaksi top up Robux, proses aktivasi pesanan secara instan, dan kelola katalog produk toko dengan mudah.

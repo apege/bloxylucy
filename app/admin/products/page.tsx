@@ -12,10 +12,14 @@ import {
   Check,
   X,
   Sparkles,
-  Tag
+  Tag,
+  AlertTriangle,
+  Flame,
+  Zap,
+  Crown
 } from 'lucide-react';
-import { Product } from '@/lib/admin-types';
-import { getProducts, saveProduct, deleteProduct } from '@/lib/supabase-service';
+import { Product, StoreSettings } from '@/lib/admin-types';
+import { getProducts, saveProduct, deleteProduct, getStoreSettings } from '@/lib/supabase-service';
 
 function ProductsContent() {
   const searchParams = useSearchParams();
@@ -23,9 +27,11 @@ function ProductsContent() {
 
   const [mounted, setMounted] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
+  const [settings, setSettings] = useState<StoreSettings | null>(null);
+  const [popularSet, setPopularSet] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(
-    shouldOpenAdd ? { robux: 1000, price: 20000, is_active: true, category: 'Robux' } : null
+    shouldOpenAdd ? { robux: 1000, price: 20000, is_active: true } : null
   );
   const [isSaving, setIsSaving] = useState(false);
 
@@ -36,8 +42,23 @@ function ProductsContent() {
   const loadProductList = async () => {
     setLoading(true);
     try {
-      const data = await getProducts();
-      setProducts(data);
+      const [prods, st, ordRes] = await Promise.all([
+        getProducts(),
+        getStoreSettings().catch(() => null),
+        fetch('/api/orders', { cache: 'no-store' }).then((r) => r.json()).catch(() => null),
+      ]);
+      setProducts(prods);
+      if (st) setSettings(st);
+
+      const orders = ordRes?.success && Array.isArray(ordRes.data) ? ordRes.data : [];
+      const counts: Record<number, number> = {};
+      orders.forEach((o: any) => {
+        if (o.robux) counts[o.robux] = (counts[o.robux] || 0) + 1;
+      });
+      const sorted = Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([amt]) => Number(amt));
+      setPopularSet(new Set(sorted.length > 0 ? sorted.slice(0, 2) : [1000, 2200]));
     } catch (err) {
       console.error(err);
     } finally {
@@ -72,12 +93,42 @@ function ProductsContent() {
     return clean ? parseInt(clean, 10) : 0;
   };
 
+  // Duplicate nominal check
+  const duplicateProduct = products.find(
+    (p) => p.robux === editingProduct?.robux && p.id !== editingProduct?.id
+  );
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProduct || !editingProduct.robux || !editingProduct.price) {
       alert('Mohon isi nominal Robux dan Harga produk.');
       return;
     }
+
+    if (duplicateProduct && !editingProduct.id) {
+      const confirmUpdate = confirm(
+        `Nominal ${formatRobux(editingProduct.robux)} Robux sudah ada dalam daftar dengan harga ${formatRupiah(duplicateProduct.price)}.\n\nApakah Anda ingin memperbarui harga paket yang sudah ada ini menjadi ${formatRupiah(editingProduct.price)}?`
+      );
+      if (!confirmUpdate) return;
+
+      setIsSaving(true);
+      try {
+        await saveProduct({
+          ...duplicateProduct,
+          price: editingProduct.price,
+          is_active: editingProduct.is_active ?? duplicateProduct.is_active,
+        });
+        setEditingProduct(null);
+        await loadProductList();
+      } catch (err: any) {
+        console.error(err);
+        alert('Gagal memperbarui produk: ' + (err.message || 'Error'));
+      } finally {
+        setIsSaving(false);
+      }
+      return;
+    }
+
     setIsSaving(true);
     try {
       await saveProduct({
@@ -86,9 +137,9 @@ function ProductsContent() {
       });
       setEditingProduct(null);
       await loadProductList();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('Gagal menyimpan produk');
+      alert('Gagal menyimpan produk: ' + (err.message || 'Error'));
     } finally {
       setIsSaving(false);
     }
@@ -190,6 +241,27 @@ function ProductsContent() {
                     R$
                   </span>
                 </div>
+
+                {/* Realtime Duplicate Nominal Warning Box */}
+                {duplicateProduct && (
+                  <div className="mt-2.5 p-3 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs space-y-1.5 animate-fadeIn text-left">
+                    <div className="flex items-center gap-1.5 font-black text-amber-800">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>Nominal {formatRobux(duplicateProduct.robux)} Robux Sudah Ada!</span>
+                    </div>
+                    <p className="text-[11px] text-amber-700 font-medium leading-relaxed">
+                      Paket ini sudah terdaftar dengan harga <strong>{formatRupiah(duplicateProduct.price)}</strong> ({duplicateProduct.is_active ? 'Aktif' : 'Nonaktif'}).
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setEditingProduct({ ...duplicateProduct })}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-200/80 hover:bg-amber-300 text-amber-900 text-[10px] font-black transition-colors cursor-pointer"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                      <span>Beralih Edit Paket yang Sudah Ada</span>
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -256,44 +328,66 @@ function ProductsContent() {
 
       {/* Product Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {products.map((prod) => (
-          <div
-            key={prod.id}
-            className={`rounded-3xl border p-5 bg-white shadow-xs transition-all space-y-3 relative ${
-              prod.is_active ? 'border-pink-200/80 hover:border-pink-300' : 'border-zinc-200 opacity-60 bg-zinc-50'
-            }`}
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="relative w-11 h-11 rounded-2xl bg-amber-50/80 border border-amber-200 flex items-center justify-center p-1.5 shadow-2xs">
-                  <Image
-                    src="/images/robux.webp"
-                    alt="Robux"
-                    width={32}
-                    height={32}
-                    className="object-contain"
-                  />
-                </div>
-                <div>
-                  <h3 className="text-sm sm:text-base font-black text-zinc-900">
-                    {formatRobux(prod.robux)} Robux
-                  </h3>
-                  <p className="text-xs font-black text-pink-600">
-                    {formatRupiah(prod.price)}
-                  </p>
-                </div>
-              </div>
+        {products.map((prod) => {
+          const isPromo = Boolean(settings?.promo_active && prod.robux === settings?.promo_robux_amount);
+          const isPop = !isPromo && popularSet.has(prod.robux);
+          const isSultan = prod.robux >= 10000;
 
-              <span
-                className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border ${
-                  prod.is_active
-                    ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
-                    : 'bg-zinc-100 text-zinc-500 border-zinc-200'
-                }`}
-              >
-                {prod.is_active ? 'Aktif' : 'Nonaktif'}
-              </span>
-            </div>
+          return (
+            <div
+              key={prod.id}
+              className={`rounded-3xl border p-5 bg-white shadow-xs transition-all space-y-3 relative ${
+                prod.is_active ? 'border-pink-200/80 hover:border-pink-300' : 'border-zinc-200 opacity-60 bg-zinc-50'
+              }`}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="relative w-11 h-11 rounded-2xl bg-amber-50/80 border border-amber-200 flex items-center justify-center p-1.5 shadow-2xs">
+                    <Image
+                      src="/images/robux.webp"
+                      alt="Robux"
+                      width={32}
+                      height={32}
+                      className="object-contain"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <h3 className="text-sm sm:text-base font-black text-zinc-900">
+                        {formatRobux(prod.robux)} Robux
+                      </h3>
+                      {isPromo && (
+                        <span className="inline-flex items-center gap-0.5 bg-rose-500 text-white text-[9px] font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs">
+                          <Zap className="w-2.5 h-2.5 fill-white" /> PROMO
+                        </span>
+                      )}
+                      {isPop && (
+                        <span className="inline-flex items-center gap-0.5 bg-orange-500 text-white text-[9px] font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs">
+                          <Flame className="w-2.5 h-2.5 fill-white" /> POPULER
+                        </span>
+                      )}
+                      {isSultan && (
+                        <span className="inline-flex items-center gap-0.5 bg-amber-500 text-white text-[9px] font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs">
+                          <Crown className="w-2.5 h-2.5 fill-white" /> SULTAN
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs font-black text-pink-600 mt-0.5">
+                      {formatRupiah(prod.price)}
+                    </p>
+                  </div>
+                </div>
+
+                <span
+                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border ${
+                    prod.is_active
+                      ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                      : 'bg-zinc-100 text-zinc-500 border-zinc-200'
+                  }`}
+                >
+                  {prod.is_active ? 'Aktif' : 'Nonaktif'}
+                </span>
+              </div>
 
             <div className="flex items-center justify-between pt-2 border-t border-zinc-100">
               <button
@@ -324,7 +418,8 @@ function ProductsContent() {
               </div>
             </div>
           </div>
-        ))}
+        );
+      })}
       </div>
 
     </div>

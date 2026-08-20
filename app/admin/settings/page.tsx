@@ -161,7 +161,24 @@ export default function StoreSettingsPage() {
     }
   };
 
-  const isPromoActive = Boolean(settings.promo_active ?? true);
+  const isPromoActive = Boolean(settings.promo_active);
+
+  const handleTogglePromo = async (newChecked: boolean) => {
+    const updated: StoreSettings = {
+      ...settings,
+      promo_active: newChecked,
+      promo_discount_price: parseNumberFromDots(formattedDiscountPrice),
+      promo_robux_amount: parseNumberFromDots(formattedRobuxAmount),
+    };
+    setSettings(updated);
+    try {
+      await saveStoreSettings(updated);
+      setToastMessage(newChecked ? 'Banner promo berhasil diaktifkan!' : 'Banner promo berhasil dinonaktifkan!');
+      setTimeout(() => setToastMessage(null), 3000);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -342,7 +359,7 @@ export default function StoreSettingsPage() {
                 <input
                   type="checkbox"
                   checked={isPromoActive}
-                  onChange={(e) => setSettings({ ...settings, promo_active: e.target.checked })}
+                  onChange={(e) => handleTogglePromo(e.target.checked)}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-zinc-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500"></div>

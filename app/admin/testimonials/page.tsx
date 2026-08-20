@@ -22,7 +22,9 @@ import {
   UploadCloud,
   FileCheck,
   MessageCircleHeart,
-  ImageIcon
+  ImageIcon,
+  ChevronDown,
+  Sparkles
 } from 'lucide-react';
 import { Testimonial } from '@/lib/admin-types';
 import { compressImageToWebP } from '@/app/components/imageCompressor';
@@ -43,6 +45,8 @@ function TestimonialsContent() {
   const [editingItem, setEditingItem] = useState<Partial<Testimonial> | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isCompressingProof, setIsCompressingProof] = useState(false);
+  const [isPackageDropdownOpen, setIsPackageDropdownOpen] = useState(false);
+  const [pricelistPackages, setPricelistPackages] = useState<{ robux: number; label: string; price: number }[]>([]);
   const modalFileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -52,12 +56,33 @@ function TestimonialsContent() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/testimonials');
+      const res = await fetch('/api/testimonials', { cache: 'no-store' });
       if (res.ok) {
         const json = await res.json();
         if (json.success && Array.isArray(json.data)) {
           setTestimonials(json.data);
         }
+      }
+
+      // Load products strictly from actual Pricelist
+      try {
+        const prodRes = await fetch('/api/products', { cache: 'no-store' });
+        if (prodRes.ok) {
+          const prodJson = await prodRes.json();
+          if (prodJson.success && Array.isArray(prodJson.data) && prodJson.data.length > 0) {
+            const list = prodJson.data
+              .filter((p: any) => p.is_active !== false)
+              .sort((a: any, b: any) => Number(a.robux) - Number(b.robux))
+              .map((p: any) => ({
+                robux: Number(p.robux),
+                label: `${new Intl.NumberFormat('id-ID').format(p.robux)} Robux`,
+                price: Number(p.price || 0),
+              }));
+            setPricelistPackages(list);
+          }
+        }
+      } catch (err) {
+        console.warn('Load pricelist for testimonials notice:', err);
       }
     } catch (err) {
       console.error('Fetch testimonials error:', err);
@@ -439,18 +464,107 @@ function TestimonialsContent() {
                 )}
               </div>
 
-              {/* Kode Order / Paket (Opsional) */}
-              <div>
-                <label className="block text-xs font-extrabold text-zinc-700 mb-1.5">
-                  Kode Order / Paket Robux (Opsional)
+              {/* Custom Pink Robux Package Dropdown */}
+              <div className="relative space-y-1.5">
+                <label className="block text-xs font-extrabold text-zinc-700 flex items-center justify-between">
+                  <span>Paket Robux / Kode Order (Opsional)</span>
+                  <span className="text-[10px] font-bold text-pink-500">Pilih dari List atau Ketik</span>
                 </label>
-                <input
-                  type="text"
-                  value={editingItem.order_code || ''}
-                  onChange={(e) => setEditingItem({ ...editingItem, order_code: e.target.value })}
-                  placeholder="Contoh: BLX28749973 atau 2.200 Robux"
-                  className="w-full px-3.5 py-2.5 rounded-2xl border border-pink-200 text-sm font-bold text-zinc-900 focus:outline-none focus:ring-2 focus:ring-pink-400/40 focus:border-pink-400 transition-all bg-[#fffcfd]"
-                />
+
+                {/* Dropdown Trigger Button */}
+                <div
+                  onClick={() => setIsPackageDropdownOpen(!isPackageDropdownOpen)}
+                  className="w-full px-3.5 py-2.5 rounded-2xl border border-pink-200 hover:border-pink-400 focus:border-pink-500 bg-[#fffcfd] flex items-center justify-between cursor-pointer transition-all shadow-2xs group"
+                >
+                  <div className="flex items-center gap-2.5 overflow-hidden">
+                    <div className="w-6 h-6 rounded-lg bg-pink-100/80 text-pink-600 flex items-center justify-center shrink-0">
+                      <Sparkles className="w-3.5 h-3.5" />
+                    </div>
+                    {editingItem.order_code ? (
+                      <span className="text-sm font-black text-pink-600 truncate">
+                        {editingItem.order_code}
+                      </span>
+                    ) : (
+                      <span className="text-sm font-semibold text-zinc-400">
+                        Pilih paket nominal Robux...
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {editingItem.order_code && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingItem({ ...editingItem, order_code: '' });
+                        }}
+                        className="text-[10px] font-bold text-zinc-400 hover:text-pink-600 px-1.5 py-0.5 rounded-md hover:bg-pink-50 transition-colors"
+                      >
+                        Reset
+                      </button>
+                    )}
+                    <ChevronDown className={`w-4 h-4 text-pink-400 group-hover:text-pink-600 transition-transform duration-200 ${isPackageDropdownOpen ? 'rotate-180 text-pink-600' : ''}`} />
+                  </div>
+                </div>
+
+                {/* Dropdown Menu Overlay */}
+                {isPackageDropdownOpen && (
+                  <div className="mt-1.5 bg-white rounded-2xl border border-pink-200 shadow-xl shadow-pink-500/10 p-3 space-y-2.5 animate-fadeIn">
+                    <div className="flex items-center justify-between px-1">
+                      <span className="text-[11px] font-black text-pink-600 uppercase tracking-wider">
+                        Pilih Paket Nominal Robux
+                      </span>
+                      <span className="text-[10px] font-bold text-zinc-400">Klik untuk memilih</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-52 overflow-y-auto pr-1">
+                      {pricelistPackages.map((pkg) => {
+                        const isSelected = editingItem.order_code === pkg.label;
+                        return (
+                          <button
+                            key={pkg.robux}
+                            type="button"
+                            onClick={() => {
+                              setEditingItem({ ...editingItem, order_code: pkg.label });
+                              setIsPackageDropdownOpen(false);
+                            }}
+                            className={`px-3 py-2 rounded-xl text-xs font-black text-left flex items-center justify-between transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-sm shadow-pink-500/25 ring-2 ring-pink-300'
+                                : 'bg-pink-50/60 hover:bg-pink-100 text-pink-700 border border-pink-100 hover:border-pink-300'
+                            }`}
+                          >
+                            <span className="truncate">{pkg.label}</span>
+                            <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                              {pkg.price > 0 && (
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold ${
+                                  isSelected ? 'bg-white/20 text-white' : 'bg-pink-100/80 text-pink-600'
+                                }`}>
+                                  Rp {new Intl.NumberFormat('id-ID').format(pkg.price)}
+                                </span>
+                              )}
+                              {isSelected && <Check className="w-3.5 h-3.5" />}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Custom Input Field at the bottom */}
+                    <div className="pt-2.5 border-t border-pink-100">
+                      <label className="block text-[10px] font-extrabold text-zinc-600 mb-1">
+                        Atau Masukkan Manual (Kode Order / Paket Kustom):
+                      </label>
+                      <input
+                        type="text"
+                        value={editingItem.order_code || ''}
+                        onChange={(e) => setEditingItem({ ...editingItem, order_code: e.target.value })}
+                        placeholder="Contoh: BLX28749973 atau 15.000 Robux"
+                        className="w-full px-3 py-2 rounded-xl border border-pink-200 text-xs font-bold text-zinc-900 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-[#fffcfd]"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Status Tampilkan */}

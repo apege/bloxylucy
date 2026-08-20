@@ -12,7 +12,10 @@ import {
   Clock,
   XCircle,
   CalendarCheck2,
-  MessageCircle
+  MessageCircle,
+  Package,
+  AlertTriangle,
+  Camera
 } from 'lucide-react';
 import { Order, OrderStatus, isWhatsAppOrder } from '@/lib/admin-types';
 import { getOrders, updateOrderStatus } from '@/lib/supabase-service';
@@ -242,8 +245,8 @@ function OrdersContent() {
           </div>
         ) : filteredOrders.length === 0 ? (
           <div className="py-16 text-center space-y-2">
-            <div className="w-12 h-12 rounded-full bg-pink-50 text-pink-500 flex items-center justify-center mx-auto text-xl">
-              📦
+            <div className="w-12 h-12 rounded-full bg-pink-50 text-pink-500 flex items-center justify-center mx-auto">
+              <Package className="w-6 h-6 text-pink-500" />
             </div>
             <p className="text-sm font-bold text-zinc-700">{pageInfo.emptyMessage}</p>
             {searchQuery && (
@@ -275,8 +278,9 @@ function OrdersContent() {
                         {statusCfg.label}
                       </span>
                       {proofRetention.hasProof && proofRetention.isExpiringSoon && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-300">
-                          ⚠️ Bukti H-{proofRetention.daysRemaining}
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3 text-amber-700" />
+                          <span>Bukti H-{proofRetention.daysRemaining}</span>
                         </span>
                       )}
                     </div>
@@ -301,8 +305,9 @@ function OrdersContent() {
                         );
                       })()}
                       {proofRetention.hasProof ? (
-                        <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
-                          📷 Bukti ({proofRetention.daysRemaining} hari)
+                        <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
+                          <Camera className="w-3 h-3" />
+                          <span>Bukti ({proofRetention.daysRemaining} hari)</span>
                         </span>
                       ) : (
                         <span className="text-[10px] font-medium text-zinc-400 italic">

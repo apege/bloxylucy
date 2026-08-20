@@ -137,7 +137,7 @@ function LoginForm() {
                 />
               </div>
               <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-tr from-pink-500 to-rose-400 text-xs text-white shadow-md">
-                🌸
+                <Sparkles className="w-3.5 h-3.5" />
               </span>
             </div>
             
@@ -232,8 +232,9 @@ function LoginForm() {
 
           {/* Footer Security / Info Badge */}
           <div className="mt-7 pt-5 border-t border-pink-200/60 text-center">
-            <p className="text-[11px] text-pink-800/60 font-medium flex items-center justify-center gap-1">
-              <span>🌸</span> Akses Khusus Administrator BloxyLucy
+            <p className="text-[11px] text-pink-800/60 font-medium flex items-center justify-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-pink-500" />
+              <span>Akses Khusus Administrator BloxyLucy</span>
             </p>
           </div>
         </div>
