@@ -56,6 +56,8 @@ export async function POST(req: NextRequest) {
 
     // Generate unique order code (BLX + 6 digits + 2 digits)
     const orderCode = `BLX${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 90 + 10)}`;
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString();
 
     const fullPayload: Record<string, any> = {
       order_code: orderCode,
@@ -69,8 +71,9 @@ export async function POST(req: NextRequest) {
       order_status: payment_proof_path ? 'processing' : 'pending',
       roblox_user_id: finalRobloxUserId,
       customer_notes: customer_notes ? String(customer_notes).trim() : null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: now.toISOString(),
+      expires_at: expiresAt,
+      updated_at: now.toISOString(),
     };
 
     // Try insert with full fields
@@ -92,8 +95,9 @@ export async function POST(req: NextRequest) {
         payment_status: payment_proof_path ? 'paid' : 'pending',
         payment_proof_path: payment_proof_path || null,
         order_status: payment_proof_path ? 'processing' : 'pending',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        created_at: now.toISOString(),
+        expires_at: expiresAt,
+        updated_at: now.toISOString(),
       };
 
       const retry = await supabase
