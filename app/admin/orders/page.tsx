@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { Order, OrderStatus } from '@/lib/admin-types';
 import { getOrders, updateOrderStatus } from '@/lib/supabase-service';
+import StorageRetentionBanner from '../components/StorageRetentionBanner';
+import { calculateProofRetention } from '@/lib/storage-retention';
 
 function OrdersContent() {
   const searchParams = useSearchParams();
@@ -188,6 +190,9 @@ function OrdersContent() {
   return (
     <div className="space-y-6 animate-fadeIn pb-12">
       
+      {/* Storage Retention & H-7 ZIP Warning Banner */}
+      <StorageRetentionBanner orders={orders} onCleanupSuccess={fetchOrdersList} />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -250,15 +255,16 @@ function OrdersContent() {
             {filteredOrders.map((order) => {
               const statusCfg = getStatusBadge(order.order_status);
               const total = order.total_payment || order.price + (order.activation_fee || 0);
+              const proofRetention = calculateProofRetention(order);
 
               return (
                 <div
                   key={order.id}
                   className="p-4 sm:p-5 hover:bg-pink-50/30 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4 group"
                 >
-                  {/* Left: Code, Customer, Date */}
+                  {/* Left: Code, Customer, Date, Proof Retention */}
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <Link
                         href={`/admin/orders/${order.order_code}`}
                         className="text-sm sm:text-base font-black text-pink-600 hover:text-pink-700 hover:underline flex items-center gap-1"
@@ -268,9 +274,14 @@ function OrdersContent() {
                       <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${statusCfg.bg}`}>
                         {statusCfg.label}
                       </span>
+                      {proofRetention.hasProof && proofRetention.isExpiringSoon && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-300">
+                          ⚠️ Bukti H-{proofRetention.daysRemaining}
+                        </span>
+                      )}
                     </div>
 
-                    <div className="flex items-center gap-2 text-xs font-semibold text-zinc-600">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-zinc-600 flex-wrap">
                       <span className="text-zinc-900 font-extrabold">@{order.roblox_username}</span>
                       <span className="text-zinc-300">•</span>
                       <span>{formatDate(order.created_at)}</span>
@@ -278,6 +289,15 @@ function OrdersContent() {
                       <span className="uppercase text-[10px] font-bold text-zinc-400 bg-zinc-100 px-1.5 py-0.2 rounded">
                         {order.payment_method}
                       </span>
+                      {proofRetention.hasProof ? (
+                        <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                          📷 Bukti ({proofRetention.daysRemaining} hari)
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-medium text-zinc-400 italic">
+                          (Tanpa foto)
+                        </span>
+                      )}
                     </div>
                   </div>
 

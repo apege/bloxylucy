@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Order, DashboardStats } from '@/lib/admin-types';
 import { getOrders, computeDashboardStats } from '@/lib/supabase-service';
+import StorageRetentionBanner from './components/StorageRetentionBanner';
 
 export default function AdminDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -66,6 +67,9 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-6 animate-fadeIn pb-12">
       
+      {/* Storage Retention & H-7 ZIP Warning Banner */}
+      <StorageRetentionBanner orders={orders} onCleanupSuccess={loadData} />
+
       {/* Top Banner / Welcome (Matching Reference Image 1) */}
       <div className="relative overflow-hidden bg-white rounded-3xl border border-pink-200/70 p-6 sm:p-8 shadow-xs flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
         

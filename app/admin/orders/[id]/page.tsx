@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { Order, OrderStatus } from '@/lib/admin-types';
 import { getOrderById, updateOrderStatus, updateAdminNotes } from '@/lib/supabase-service';
+import { calculateProofRetention } from '@/lib/storage-retention';
 
 export default function OrderDetailPage({
   params,
@@ -434,19 +435,44 @@ export default function OrderDetailPage({
             </span>
           </div>
 
-          {/* Payment Proof Preview Button */}
-          {order.payment_proof_path && (
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={() => setShowProofModal(true)}
-                className="w-full py-2 px-3 rounded-xl bg-pink-50 hover:bg-pink-100 border border-pink-200 text-pink-600 text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
-              >
-                <Eye className="w-4 h-4" />
-                <span>Lihat Bukti Transfer Pelanggan</span>
-              </button>
-            </div>
-          )}
+          {/* Payment Proof Preview Button & Retention Info */}
+          {(() => {
+            const retention = calculateProofRetention(order);
+            if (order.payment_proof_path) {
+              return (
+                <div className="pt-2 space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowProofModal(true)}
+                    className="w-full py-2 px-3 rounded-xl bg-pink-50 hover:bg-pink-100 border border-pink-200 text-pink-600 text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <Eye className="w-4 h-4" />
+                    <span>Lihat Bukti Transfer Pelanggan</span>
+                  </button>
+
+                  <div className="p-2.5 rounded-xl bg-zinc-50 border border-zinc-200/80 text-[11px] text-zinc-600 flex items-center justify-between">
+                    <span className="font-semibold">Retensi Storage:</span>
+                    {retention.isExpiringSoon ? (
+                      <span className="font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300">
+                        ⚠️ Kedaluwarsa dlm {retention.daysRemaining} hari
+                      </span>
+                    ) : (
+                      <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        ✓ Tersimpan ({retention.daysRemaining} hari lagi)
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <div className="pt-2">
+                <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-200/70 text-center text-xs text-zinc-400 font-medium">
+                  Foto bukti transfer telah dibersihkan oleh sistem retensi atau tidak diunggah.
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
 
