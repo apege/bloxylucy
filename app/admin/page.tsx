@@ -17,7 +17,7 @@ import {
   Users,
   CreditCard
 } from 'lucide-react';
-import { Order, DashboardStats } from '@/lib/admin-types';
+import { Order, DashboardStats, isWhatsAppOrder } from '@/lib/admin-types';
 import { getOrders, computeDashboardStats } from '@/lib/supabase-service';
 import StorageRetentionBanner from './components/StorageRetentionBanner';
 
@@ -289,9 +289,20 @@ export default function AdminDashboardPage() {
                 <div className="text-xs sm:text-sm font-black text-zinc-900">
                   {formatRupiah(o.total_payment || o.price)}
                 </div>
-                <span className="text-[10px] font-bold text-zinc-400 uppercase">
-                  {o.payment_method}
-                </span>
+                {(() => {
+                  const isWa = isWhatsAppOrder(o);
+                  return (
+                    <span
+                      className={`text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded border ${
+                        isWa
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                          : 'bg-pink-50 text-pink-600 border-pink-200'
+                      }`}
+                    >
+                      {isWa ? 'WhatsApp' : 'Website'}
+                    </span>
+                  );
+                })()}
               </div>
             </div>
           ))}

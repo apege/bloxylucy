@@ -14,7 +14,7 @@ import {
   Calendar,
   DollarSign
 } from 'lucide-react';
-import { Order } from '@/lib/admin-types';
+import { Order, isWhatsAppOrder } from '@/lib/admin-types';
 import { getOrders } from '@/lib/supabase-service';
 
 function FinanceContent() {
@@ -59,9 +59,9 @@ function FinanceContent() {
   const totalRevenue = paidOrders.reduce((acc, o) => acc + (o.total_payment || o.price), 0);
   const totalRobuxDelivered = paidOrders.reduce((acc, o) => acc + o.robux, 0);
 
-  // Breakdown metrics
-  const websiteOrders = paidOrders.filter((o) => (o.payment_method || 'Website') === 'Website');
-  const waOrders = paidOrders.filter((o) => (o.payment_method || '').toLowerCase().includes('wa') || o.payment_method === 'WhatsApp');
+  // Breakdown metrics: Website channel vs WhatsApp
+  const waOrders = paidOrders.filter((o) => isWhatsAppOrder(o));
+  const websiteOrders = paidOrders.filter((o) => !isWhatsAppOrder(o));
 
   const websiteRevenue = websiteOrders.reduce((acc, o) => acc + (o.total_payment || o.price), 0);
   const waRevenue = waOrders.reduce((acc, o) => acc + (o.total_payment || o.price), 0);
@@ -71,8 +71,10 @@ function FinanceContent() {
 
   // Filtered transactions
   const filteredOrders = paidOrders.filter((o) => {
-    const method = o.payment_method?.toLowerCase().includes('wa') ? 'WhatsApp' : 'Website';
-    if (filterChannel !== 'all' && method !== filterChannel) return false;
+    const isWa = isWhatsAppOrder(o);
+    const methodChannel = isWa ? 'WhatsApp' : 'Website';
+
+    if (filterChannel !== 'all' && methodChannel !== filterChannel) return false;
 
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -349,7 +351,7 @@ function FinanceContent() {
         ) : (
           <div className="divide-y divide-pink-100/60">
             {filteredOrders.map((order) => {
-              const isWa = order.payment_method?.toLowerCase().includes('wa');
+              const isWa = isWhatsAppOrder(order);
               return (
                 <div
                   key={order.id}
@@ -372,8 +374,8 @@ function FinanceContent() {
                       <span
                         className={`font-extrabold uppercase px-1.5 py-0.2 rounded-md ${
                           isWa
-                            ? 'bg-emerald-50 text-emerald-700'
-                            : 'bg-pink-50 text-pink-600'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : 'bg-pink-50 text-pink-600 border border-pink-200'
                         }`}
                       >
                         {isWa ? 'WhatsApp' : 'Website'}

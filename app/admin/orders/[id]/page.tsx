@@ -21,7 +21,7 @@ import {
   X,
   Download
 } from 'lucide-react';
-import { Order, OrderStatus } from '@/lib/admin-types';
+import { Order, OrderStatus, isWhatsAppOrder } from '@/lib/admin-types';
 import { getOrderById, updateOrderStatus, updateAdminNotes } from '@/lib/supabase-service';
 import { calculateProofRetention } from '@/lib/storage-retention';
 
@@ -417,9 +417,20 @@ export default function OrderDetailPage({
           {/* Payment Method row */}
           <div className="flex items-center justify-between text-xs sm:text-sm font-semibold text-zinc-600 py-1">
             <span>Metode Pembayaran</span>
-            <span className="font-black text-zinc-900 uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-zinc-100 border border-zinc-200">
-              {order.payment_method}
-            </span>
+            {(() => {
+              const isWa = isWhatsAppOrder(order);
+              return (
+                <span
+                  className={`font-black uppercase tracking-wider px-2.5 py-0.5 rounded-lg border ${
+                    isWa
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                      : 'bg-pink-50 text-pink-600 border-pink-200'
+                  }`}
+                >
+                  {isWa ? 'WhatsApp' : 'Website'}
+                </span>
+              );
+            })()}
           </div>
 
           {/* Divider */}

@@ -14,7 +14,7 @@ import {
   CalendarCheck2,
   MessageCircle
 } from 'lucide-react';
-import { Order, OrderStatus } from '@/lib/admin-types';
+import { Order, OrderStatus, isWhatsAppOrder } from '@/lib/admin-types';
 import { getOrders, updateOrderStatus } from '@/lib/supabase-service';
 import StorageRetentionBanner from '../components/StorageRetentionBanner';
 import { calculateProofRetention } from '@/lib/storage-retention';
@@ -286,9 +286,20 @@ function OrdersContent() {
                       <span className="text-zinc-300">•</span>
                       <span>{formatDate(order.created_at)}</span>
                       <span className="text-zinc-300">•</span>
-                      <span className="uppercase text-[10px] font-bold text-zinc-400 bg-zinc-100 px-1.5 py-0.2 rounded">
-                        {order.payment_method}
-                      </span>
+                      {(() => {
+                        const isWa = isWhatsAppOrder(order);
+                        return (
+                          <span
+                            className={`uppercase text-[10px] font-extrabold px-2 py-0.5 rounded-md border ${
+                              isWa
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                                : 'bg-pink-50 text-pink-600 border-pink-200'
+                            }`}
+                          >
+                            {isWa ? 'WhatsApp' : 'Website'}
+                          </span>
+                        );
+                      })()}
                       {proofRetention.hasProof ? (
                         <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
                           📷 Bukti ({proofRetention.daysRemaining} hari)
