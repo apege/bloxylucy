@@ -326,9 +326,18 @@ export async function toggleCustomerBlacklist(
 }
 
 // 4. SETTINGS API
+export function getCachedStoreSettings(): StoreSettings {
+  const local = getLocal<StoreSettings>(STORAGE_KEY_SETTINGS, INITIAL_MOCK_SETTINGS);
+  return {
+    ...INITIAL_MOCK_SETTINGS,
+    ...local,
+    promo_active: local.promo_active !== undefined ? Boolean(local.promo_active) : true,
+  };
+}
+
 export async function getStoreSettings(): Promise<StoreSettings> {
   try {
-    const res = await fetch('/api/settings', { cache: 'no-store' });
+    const res = await fetch('/api/settings');
     if (res.ok) {
       const json = await res.json();
       if (json.success && json.data) {
@@ -340,12 +349,7 @@ export async function getStoreSettings(): Promise<StoreSettings> {
     console.warn('API fetch settings error:', err);
   }
 
-  const local = getLocal<StoreSettings>(STORAGE_KEY_SETTINGS, INITIAL_MOCK_SETTINGS);
-  return {
-    ...INITIAL_MOCK_SETTINGS,
-    ...local,
-    promo_active: local.promo_active !== undefined ? Boolean(local.promo_active) : true,
-  };
+  return getCachedStoreSettings();
 }
 
 export async function saveStoreSettings(settings: StoreSettings): Promise<boolean> {

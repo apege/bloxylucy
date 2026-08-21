@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import SakuraFalling from '../components/SakuraFalling';
 import { compressImageToWebP, CompressionResult } from '../components/imageCompressor';
-import { getStoreSettings, submitCheckout } from '@/lib/supabase-service';
+import { getStoreSettings, getCachedStoreSettings, submitCheckout } from '@/lib/supabase-service';
 
 function CheckoutContent() {
   const searchParams = useSearchParams();
@@ -36,8 +36,15 @@ function CheckoutContent() {
   const [isCompressing, setIsCompressing] = useState(false);
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerNotes, setCustomerNotes] = useState('');
-  const [qrisImage, setQrisImage] = useState('/images/qris.webp');
-  const [storeTitle, setStoreTitle] = useState('BLOXYLUCY OFFICIAL');
+  
+  // Instant synchronous initialization from cached store settings
+  const [qrisImage, setQrisImage] = useState(() => {
+    return getCachedStoreSettings().qris_image_path || '/images/qris.webp';
+  });
+  const [storeTitle, setStoreTitle] = useState(() => {
+    return (getCachedStoreSettings().store_name || 'BLOXYLUCY OFFICIAL').toUpperCase();
+  });
+
   const [isSubmitted, setIsSubmitted] = useState(isDirectSuccess);
   const [submittedOrderCode, setSubmittedOrderCode] = useState(initialOrderCode);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -317,6 +324,7 @@ function CheckoutContent() {
                   fill
                   className="object-contain"
                   priority
+                  unoptimized
                 />
               </div>
             </div>

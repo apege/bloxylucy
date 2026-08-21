@@ -4,10 +4,10 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Zap, ArrowRight, Clock, Sparkles, ShieldCheck, CheckCircle2, MessageCircle } from 'lucide-react';
 import { StoreSettings } from '@/lib/admin-types';
-import { getStoreSettings, INITIAL_MOCK_SETTINGS } from '@/lib/supabase-service';
+import { getStoreSettings, getCachedStoreSettings, INITIAL_MOCK_SETTINGS } from '@/lib/supabase-service';
 
 export default function HeroBanner() {
-  const [settings, setSettings] = useState<StoreSettings>(INITIAL_MOCK_SETTINGS);
+  const [settings, setSettings] = useState<StoreSettings>(() => getCachedStoreSettings());
   const [timeLeft, setTimeLeft] = useState({
     days: 19,
     hours: 23,

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { ShoppingCart, Flame, ShieldCheck, Menu, X, MessageCircle } from 'lucide-react';
-import { getStoreSettings } from '@/lib/supabase-service';
+import { getStoreSettings, getCachedStoreSettings } from '@/lib/supabase-service';
 
 interface NavbarProps {
   cartCount: number;
@@ -12,9 +12,9 @@ interface NavbarProps {
 
 export default function Navbar({ cartCount, onOpenCart }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [storeName, setStoreName] = useState('BloxyLucy');
-  const [logoPath, setLogoPath] = useState('/images/logo.jpeg');
-  const [csPhone, setCsPhone] = useState('6287816959979');
+  const [storeName, setStoreName] = useState(() => getCachedStoreSettings().store_name || 'BloxyLucy');
+  const [logoPath, setLogoPath] = useState(() => getCachedStoreSettings().logo_image_path || '/images/logo.jpeg');
+  const [csPhone, setCsPhone] = useState(() => getCachedStoreSettings().whatsapp_number || '6287816959979');
 
   useEffect(() => {
     getStoreSettings().then((s) => {

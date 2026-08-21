@@ -11,7 +11,7 @@ import {
   FileCheck,
   QrCode
 } from 'lucide-react';
-import { getStoreSettings, submitCheckout } from '@/lib/supabase-service';
+import { getStoreSettings, getCachedStoreSettings, submitCheckout } from '@/lib/supabase-service';
 
 interface PaymentProofModalProps {
   isOpen: boolean;
@@ -34,8 +34,15 @@ export default function PaymentProofModal({
   const [proofFileName, setProofFileName] = useState<string>('');
   const [customerPhone, setCustomerPhone] = useState<string>('');
   const [customerNotes, setCustomerNotes] = useState<string>('');
-  const [qrisImage, setQrisImage] = useState('/images/qris.webp');
-  const [storeTitle, setStoreTitle] = useState('BLOXYLUCY OFFICIAL');
+  
+  // Instant synchronous initialization from cached store settings
+  const [qrisImage, setQrisImage] = useState(() => {
+    return getCachedStoreSettings().qris_image_path || '/images/qris.webp';
+  });
+  const [storeTitle, setStoreTitle] = useState(() => {
+    return (getCachedStoreSettings().store_name || 'BLOXYLUCY OFFICIAL').toUpperCase();
+  });
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
