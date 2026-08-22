@@ -16,48 +16,94 @@ export default function NominalSection({
   onSelectItem,
   onAddToCart,
 }: NominalSectionProps) {
-  const [items, setItems] = useState<RobuxItem[]>(ROBUX_PRICELIST);
+  // 🚀 Instant Stale-While-Revalidate caching pattern for 0ms initial render
+  const [items, setItems] = useState<RobuxItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('bloxylucy_pricelist_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        }
+      } catch {}
+    }
+    return ROBUX_PRICELIST;
+  });
   const [activeFilter, setActiveFilter] = useState<'all' | 'promo' | 'popular' | 'sultan'>('all');
+  const [isLoading, setIsLoading] = useState(false);
 
   React.useEffect(() => {
-    Promise.all([
-      fetch('/api/products?active_only=true').then((r) => r.json()).catch(() => null),
-      fetch('/api/settings').then((r) => r.json()).catch(() => null),
-    ]).then(([prodRes, settingsRes]) => {
-      let rawProducts: any[] = [];
-      if (prodRes?.success && Array.isArray(prodRes.data)) {
-        rawProducts = prodRes.data;
+    let isMounted = true;
+
+    async function loadPricelist() {
+      try {
+        // Fast parallel fetch with Cache-Control headers
+        const [prodRes, settingsRes] = await Promise.all([
+          fetch('/api/products?active_only=true').then((r) => r.json()).catch(() => null),
+          fetch('/api/settings').then((r) => r.json()).catch(() => null),
+        ]);
+
+        if (!isMounted) return;
+
+        let rawProducts: any[] = [];
+        if (prodRes?.success && Array.isArray(prodRes.data) && prodRes.data.length > 0) {
+          rawProducts = prodRes.data;
+        }
+
+        if (rawProducts.length === 0) return;
+
+        const settings = settingsRes?.success ? settingsRes.data : null;
+        const promoActive = settings?.promo_active ?? true;
+        const promoAmount = settings?.promo_robux_amount ?? 2200;
+        const popularSet = new Set([1000, 2200]);
+
+        const mapped: RobuxItem[] = rawProducts.map((p: any) => {
+          const amt = Number(p.robux);
+          const isPromo = p.is_promo !== undefined ? Boolean(p.is_promo) : (promoActive && amt === promoAmount);
+          const isPopular = p.is_popular !== undefined ? Boolean(p.is_popular) : (!isPromo && popularSet.has(amt));
+          const isSultan = p.is_best_value !== undefined ? Boolean(p.is_best_value) : (amt >= 10000);
+
+          return {
+            id: `rbx-${p.id}`,
+            amount: amt,
+            price: Number(p.price),
+            originalPrice: p.original_price ? Number(p.original_price) : undefined,
+            isPromo,
+            isPopular,
+            isBestValue: isSultan,
+          };
+        });
+
+        if (mapped.length > 0) {
+          setItems(mapped);
+          try {
+            localStorage.setItem('bloxylucy_pricelist_cache', JSON.stringify(mapped));
+          } catch {}
+
+          // If current selected item exists, sync with latest price from DB
+          if (selectedItem) {
+            const updatedSelection = mapped.find(
+              (m) => m.id === selectedItem.id || m.amount === selectedItem.amount
+            );
+            if (updatedSelection && (updatedSelection.price !== selectedItem.price || updatedSelection.isPromo !== selectedItem.isPromo)) {
+              onSelectItem(updatedSelection);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Silent pricelist refresh notice:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
+    }
 
-      // 1. Promo: automatically matches active promo nominal in Store Settings
-      const settings = settingsRes?.success ? settingsRes.data : null;
-      const promoActive = settings?.promo_active ?? true;
-      const promoAmount = settings?.promo_robux_amount ?? 2200;
+    loadPricelist();
 
-      // 2. Popular packages default
-      const popularSet = new Set([1000, 2200]);
-
-      const mapped: RobuxItem[] = rawProducts.map((p: any) => {
-        const amt = Number(p.robux);
-        const isPromo = promoActive && amt === promoAmount;
-        const isPopular = !isPromo && popularSet.has(amt);
-        const isSultan = amt >= 10000;
-
-        return {
-          id: `rbx-${p.id}`,
-          amount: amt,
-          price: Number(p.price),
-          originalPrice: p.original_price ? Number(p.original_price) : undefined,
-          isPromo,
-          isPopular,
-          isBestValue: isSultan,
-        };
-      });
-
-      if (mapped.length > 0) {
-        setItems(mapped);
-      }
-    });
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const popularCount = items.filter((i) => i.isPopular).length;
@@ -158,6 +204,32 @@ export default function NominalSection({
 
         {/* Cards Grid: 2 Columns on Mobile, 3 on Tablet, 4 on Desktop */}
         <div className="p-3.5 sm:p-6 md:p-8">
+          {items.length === 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div
+                  key={i}
+                  className="rounded-2xl border border-pink-100 bg-white p-4 space-y-3 animate-pulse"
+                >
+                  <div className="flex justify-between items-center">
+                    <div className="h-4 w-14 bg-pink-100 rounded-full" />
+                    <div className="h-6 w-6 bg-pink-50 rounded-full" />
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-xl bg-pink-100/70" />
+                    <div className="space-y-1.5 flex-1">
+                      <div className="h-4 w-20 bg-pink-100 rounded-md" />
+                      <div className="h-3.5 w-16 bg-pink-50 rounded-md" />
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-pink-50 flex justify-between">
+                    <div className="h-3 w-10 bg-pink-50 rounded" />
+                    <div className="h-3 w-8 bg-pink-100 rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4">
             {filteredItems.map((item) => {
               const isSelected = selectedItem?.id === item.id;
@@ -259,6 +331,7 @@ export default function NominalSection({
               );
             })}
           </div>
+          )}
         </div>
 
       </div>

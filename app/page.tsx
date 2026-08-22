@@ -22,7 +22,9 @@ export default function Home() {
   // State for topup process
   const [username, setUsername] = useState('');
   const [robloxUserId, setRobloxUserId] = useState<string | number>('');
-  const [selectedItem, setSelectedItem] = useState<RobuxItem | null>(ROBUX_PRICELIST[1]); // Default 2200 Robux Promo
+  const [selectedItem, setSelectedItem] = useState<RobuxItem | null>(
+    () => ROBUX_PRICELIST.find((p) => p.isPromo) || ROBUX_PRICELIST[2] || ROBUX_PRICELIST[0] || null
+  );
   const [paymentChannel, setPaymentChannel] = useState<'website' | 'whatsapp'>('website');
   const [cart, setCart] = useState<RobuxItem[]>([]);
   const [isOpenCart, setIsOpenCart] = useState(false);
