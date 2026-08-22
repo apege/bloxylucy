@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { invalidateMemoryCache } from '@/lib/server-cache';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -82,6 +83,7 @@ export async function PATCH(
       data = retry.data;
     }
 
+    invalidateMemoryCache('products_');
     return NextResponse.json({ success: true, data });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
@@ -105,6 +107,7 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
+    invalidateMemoryCache('products_');
     return NextResponse.json({ success: true, message: 'Produk berhasil dihapus' });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });

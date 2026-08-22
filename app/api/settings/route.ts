@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { StoreSettings } from '@/lib/admin-types';
+import { getMemoryCache, setMemoryCache, invalidateMemoryCache } from '@/lib/server-cache';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -24,6 +25,18 @@ const DEFAULT_SETTINGS: StoreSettings = {
 
 export async function GET(req: NextRequest) {
   try {
+    const cached = getMemoryCache<StoreSettings>('store_settings', 60000);
+    if (cached) {
+      return NextResponse.json(
+        { success: true, data: cached },
+        {
+          headers: {
+            'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120',
+          },
+        }
+      );
+    }
+
     const { data, error } = await supabase.from('store_settings').select('*').limit(1).maybeSingle();
 
     if (error || !data) {
@@ -40,7 +53,16 @@ export async function GET(req: NextRequest) {
       promo_active: data.promo_active !== undefined ? Boolean(data.promo_active) : true,
     };
 
-    return NextResponse.json({ success: true, data: mergedSettings });
+    setMemoryCache('store_settings', mergedSettings);
+
+    return NextResponse.json(
+      { success: true, data: mergedSettings },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120',
+        },
+      }
+    );
   } catch (err: any) {
     console.error('API Settings GET Error:', err);
     return NextResponse.json({ success: true, data: DEFAULT_SETTINGS });
@@ -90,6 +112,8 @@ export async function POST(req: NextRequest) {
     if (resultError) {
       console.warn('Supabase store_settings save warning:', resultError.message);
     }
+
+    invalidateMemoryCache('store_settings');
 
     return NextResponse.json({ success: true, data: resultData });
   } catch (err: any) {

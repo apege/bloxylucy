@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { Product } from '@/lib/admin-types';
+import { getMemoryCache, setMemoryCache, invalidateMemoryCache } from '@/lib/server-cache';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -9,6 +10,20 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const activeOnly = searchParams.get('active_only') === 'true';
+    const cacheKey = `products_${activeOnly ? 'active' : 'all'}`;
+
+    // 1. Return from in-memory cache if fresh (TTL: 60s)
+    const cached = getMemoryCache<any[]>(cacheKey, 60000);
+    if (cached && Array.isArray(cached) && cached.length > 0) {
+      return NextResponse.json(
+        { success: true, data: cached },
+        {
+          headers: {
+            'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120',
+          },
+        }
+      );
+    }
 
     let query = supabase.from('products').select('*').order('robux', { ascending: true });
 
@@ -23,7 +38,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, data: [] });
     }
 
-    return NextResponse.json({ success: true, data: data || [] });
+    const productsData = data || [];
+    setMemoryCache(cacheKey, productsData);
+
+    return NextResponse.json(
+      { success: true, data: productsData },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120',
+        },
+      }
+    );
   } catch (err: any) {
     console.error('API Products GET Error:', err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
@@ -104,6 +129,7 @@ export async function POST(req: NextRequest) {
       data = retry.data;
     }
 
+    invalidateMemoryCache('products_');
     return NextResponse.json({ success: true, data }, { status: 201 });
   } catch (err: any) {
     console.error('API Products POST Error:', err);
