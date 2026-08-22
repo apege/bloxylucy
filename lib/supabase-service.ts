@@ -2,7 +2,14 @@ import { Order, Product, Customer, StoreSettings, DashboardStats } from './admin
 import { supabase } from './supabase';
 
 export const INITIAL_MOCK_ORDERS: Order[] = [];
-export const INITIAL_MOCK_PRODUCTS: Product[] = [];
+export const INITIAL_MOCK_PRODUCTS: Product[] = [
+  { id: 1, name: 'Paket Hemat', robux: 400, price: 9000, original_price: 12000, is_active: true, is_popular: false, is_best_value: false, is_promo: false, category: 'Robux' },
+  { id: 2, name: 'Paket Populer', robux: 1000, price: 22000, original_price: 25000, is_active: true, is_popular: true, is_best_value: false, is_promo: false, category: 'Robux' },
+  { id: 3, name: 'Paket Spesial Banner Promo', robux: 2200, price: 45000, original_price: 55000, is_active: true, is_popular: true, is_best_value: false, is_promo: true, category: 'Promo' },
+  { id: 4, name: 'Paket Sultan', robux: 5000, price: 97000, original_price: 110000, is_active: true, is_popular: false, is_best_value: true, is_promo: false, category: 'Robux' },
+  { id: 5, name: 'Paket Mega Sultan', robux: 10000, price: 190000, original_price: 220000, is_active: true, is_popular: false, is_best_value: true, is_promo: false, category: 'Robux' },
+  { id: 6, name: 'Paket Ultimate King', robux: 30500, price: 500000, original_price: 600000, is_active: true, is_popular: false, is_best_value: true, is_promo: false, category: 'Robux' },
+];
 export const INITIAL_MOCK_CUSTOMERS: Customer[] = [];
 
 export const INITIAL_MOCK_SETTINGS: StoreSettings = {
