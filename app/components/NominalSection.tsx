@@ -16,26 +16,23 @@ export default function NominalSection({
   onSelectItem,
   onAddToCart,
 }: NominalSectionProps) {
-  // 🚀 Instant Stale-While-Revalidate caching pattern for 0ms initial render
-  const [items, setItems] = useState<RobuxItem[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('bloxylucy_pricelist_cache');
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed;
-          }
-        }
-      } catch {}
-    }
-    return ROBUX_PRICELIST;
-  });
+  const [items, setItems] = useState<RobuxItem[]>(ROBUX_PRICELIST);
   const [activeFilter, setActiveFilter] = useState<'all' | 'promo' | 'popular' | 'sultan'>('all');
   const [isLoading, setIsLoading] = useState(false);
 
   React.useEffect(() => {
     let isMounted = true;
+
+    // 1. Immediately read from localStorage cache on client after mount
+    try {
+      const cached = localStorage.getItem('bloxylucy_pricelist_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setItems(parsed);
+        }
+      }
+    } catch {}
 
     async function loadPricelist() {
       try {

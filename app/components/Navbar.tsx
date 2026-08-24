@@ -12,9 +12,9 @@ interface NavbarProps {
 
 export default function Navbar({ cartCount, onOpenCart }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [storeName, setStoreName] = useState(() => getCachedStoreSettings().store_name || 'BloxyLucy');
-  const [logoPath, setLogoPath] = useState(() => getCachedStoreSettings().logo_image_path || '/images/logo.jpeg');
-  const [csPhone, setCsPhone] = useState(() => getCachedStoreSettings().whatsapp_number || '6287816959979');
+  const [storeName, setStoreName] = useState('BloxyLucy');
+  const [logoPath, setLogoPath] = useState('/images/logo.jpeg');
+  const [csPhone, setCsPhone] = useState('6285828378025');
 
   useEffect(() => {
     getStoreSettings().then((s) => {
@@ -157,7 +157,7 @@ export default function Navbar({ cartCount, onOpenCart }: NavbarProps) {
             Testimoni Member
           </a>
           <a
-            href="https://wa.me/6287816959979"
+            href={`https://wa.me/${csPhone}?text=Halo%20Admin%20${encodeURIComponent(storeName)},%20saya%20mau%20tanya%20top%20up%20Robux`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-bold mt-2"

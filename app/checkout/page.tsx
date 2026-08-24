@@ -37,13 +37,9 @@ function CheckoutContent() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerNotes, setCustomerNotes] = useState('');
   
-  // Instant synchronous initialization from cached store settings
-  const [qrisImage, setQrisImage] = useState(() => {
-    return getCachedStoreSettings().qris_image_path || '/images/qris.webp';
-  });
-  const [storeTitle, setStoreTitle] = useState(() => {
-    return (getCachedStoreSettings().store_name || 'BLOXYLUCY OFFICIAL').toUpperCase();
-  });
+  const [qrisImage, setQrisImage] = useState<string>('/images/qris.webp');
+  const [storeTitle, setStoreTitle] = useState<string>('BLOXYLUCY OFFICIAL');
+  const [adminPhone, setAdminPhone] = useState<string>('6285828378025');
 
   const [isSubmitted, setIsSubmitted] = useState(isDirectSuccess);
   const [submittedOrderCode, setSubmittedOrderCode] = useState(initialOrderCode);
@@ -54,6 +50,7 @@ function CheckoutContent() {
     getStoreSettings().then((s) => {
       if (s?.qris_image_path) setQrisImage(s.qris_image_path);
       if (s?.store_name) setStoreTitle(s.store_name.toUpperCase());
+      if (s?.whatsapp_number) setAdminPhone(s.whatsapp_number);
     }).catch(console.error);
 
     // Auto-fetch Roblox User ID if not provided in searchParams
@@ -152,7 +149,6 @@ function CheckoutContent() {
     setIsSubmitted(true);
 
     // Also open WhatsApp message in new tab
-    const adminPhone = '6287816959979';
     const proofNote = compressedResult
       ? '\n*Status:* Bukti Transfer Sudah Diupload di Website'
       : '\n*Status:* Bukti Transfer Saya Lampirkan di Chat Ini';
@@ -246,7 +242,6 @@ function CheckoutContent() {
             <button
               type="button"
               onClick={() => {
-                const adminPhone = '6287816959979';
                 const formattedPhone = customerPhone ? normalizePhone(customerPhone) : '';
                 const proofNote = compressedResult
                   ? '\n*Status:* Bukti Transfer Sudah Diupload di Website'

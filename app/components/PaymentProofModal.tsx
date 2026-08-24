@@ -35,13 +35,9 @@ export default function PaymentProofModal({
   const [customerPhone, setCustomerPhone] = useState<string>('');
   const [customerNotes, setCustomerNotes] = useState<string>('');
   
-  // Instant synchronous initialization from cached store settings
-  const [qrisImage, setQrisImage] = useState(() => {
-    return getCachedStoreSettings().qris_image_path || '/images/qris.webp';
-  });
-  const [storeTitle, setStoreTitle] = useState(() => {
-    return (getCachedStoreSettings().store_name || 'BLOXYLUCY OFFICIAL').toUpperCase();
-  });
+  const [qrisImage, setQrisImage] = useState<string>('/images/qris.webp');
+  const [storeTitle, setStoreTitle] = useState<string>('BLOXYLUCY OFFICIAL');
+  const [adminPhone, setAdminPhone] = useState<string>('6285828378025');
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -49,6 +45,7 @@ export default function PaymentProofModal({
     getStoreSettings().then((s) => {
       if (s?.qris_image_path) setQrisImage(s.qris_image_path);
       if (s?.store_name) setStoreTitle(s.store_name.toUpperCase());
+      if (s?.whatsapp_number) setAdminPhone(s.whatsapp_number);
     }).catch(console.error);
   }, []);
 
@@ -123,7 +120,6 @@ export default function PaymentProofModal({
       console.warn('Auto submit checkout error:', err);
     }
 
-    const adminPhone = '6287816959979';
     const itemsText = isCartCheckout
       ? cart.map((c) => `- ${c.amount} Robux (${formatRupiah(c.price)})`).join('\n')
       : `- ${formatRobux(totalRobux)} Robux (${formatRupiah(grandTotal)})`;

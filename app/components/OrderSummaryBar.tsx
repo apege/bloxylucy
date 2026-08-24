@@ -11,7 +11,7 @@ import {
   MessageCircle, 
   RefreshCw,
 } from 'lucide-react';
-import { submitCheckout } from '@/lib/supabase-service';
+import { submitCheckout, getStoreSettings, getCachedStoreSettings } from '@/lib/supabase-service';
 
 interface OrderSummaryBarProps {
   username: string;
@@ -38,6 +38,13 @@ export default function OrderSummaryBar({
 }: OrderSummaryBarProps) {
   const router = useRouter();
   const [isSubmittingWa, setIsSubmittingWa] = useState(false);
+  const [adminPhone, setAdminPhone] = useState<string>('6285828378025');
+
+  React.useEffect(() => {
+    getStoreSettings().then((s) => {
+      if (s?.whatsapp_number) setAdminPhone(s.whatsapp_number);
+    }).catch(console.error);
+  }, []);
 
   const formatRupiah = (num: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -77,7 +84,6 @@ export default function OrderSummaryBar({
 
     if (paymentChannel === 'whatsapp') {
       setIsSubmittingWa(true);
-      const adminPhone = '6287816959979';
       let orderCode = `BLX${Date.now().toString().slice(-6)}`;
 
       try {

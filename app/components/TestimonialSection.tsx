@@ -18,6 +18,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { compressImageToWebP, CompressionResult } from './imageCompressor';
+import { getStoreSettings, getCachedStoreSettings } from '@/lib/supabase-service';
 
 interface VerifiedOrder {
   order_code: string;
@@ -28,6 +29,7 @@ interface VerifiedOrder {
 
 export default function TestimonialSection() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>(INITIAL_TESTIMONIALS);
+  const [csPhone, setCsPhone] = useState<string>('6285828378025');
   
   // Review Token Verification State
   const [reviewToken, setReviewToken] = useState<string | null>(null);
@@ -43,6 +45,12 @@ export default function TestimonialSection() {
   const [isDragging, setIsDragging] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSending, setIsSending] = useState(false);
+
+  useEffect(() => {
+    getStoreSettings().then((s) => {
+      if (s?.whatsapp_number) setCsPhone(s.whatsapp_number);
+    }).catch(console.error);
+  }, []);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -538,7 +546,7 @@ export default function TestimonialSection() {
 
                   <div className="pt-2">
                     <a
-                      href="https://wa.me/6287816959979?text=Halo%20Admin%20BloxyLucy!%20Saya%20ingin%20minta%20link%20review%20pesanan%20Robux%20saya"
+                      href={`https://wa.me/${csPhone}?text=Halo%20Admin%20BloxyLucy!%20Saya%20ingin%20minta%20link%20review%20pesanan%20Robux%20saya`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white border border-pink-300 hover:border-pink-400 text-pink-600 hover:bg-pink-50 text-xs font-black shadow-2xs transition-all cursor-pointer"

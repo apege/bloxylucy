@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { 
   Globe, 
@@ -9,8 +9,29 @@ import {
   Heart, 
   ArrowUp
 } from 'lucide-react';
+import { getStoreSettings, getCachedStoreSettings } from '@/lib/supabase-service';
 
 export default function Footer() {
+  const [csPhone, setCsPhone] = useState('6285828378025');
+
+  useEffect(() => {
+    getStoreSettings().then((s) => {
+      if (s?.whatsapp_number) setCsPhone(s.whatsapp_number);
+    }).catch(console.error);
+  }, []);
+
+  const formatPhoneNumber = (phone: string) => {
+    let clean = phone.replace(/\D/g, '');
+    if (clean.startsWith('62')) {
+      const rest = clean.slice(2);
+      if (rest.length >= 7) {
+        return `+62 ${rest.slice(0, 3)}-${rest.slice(3, 7)}-${rest.slice(7)}`;
+      }
+      return `+62 ${rest}`;
+    }
+    return `+${clean}`;
+  };
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -99,13 +120,13 @@ export default function Footer() {
               </a>
 
               <a
-                href="https://wa.me/6287816959979"
+                href={`https://wa.me/${csPhone}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2.5 p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 transition-all text-xs"
               >
                 <MessageCircle className="w-4 h-4 text-emerald-600" />
-                <span>WhatsApp: +62 878-1695-9979</span>
+                <span>WhatsApp: {formatPhoneNumber(csPhone)}</span>
               </a>
 
               <div className="flex items-center gap-2.5 p-2 rounded-xl bg-zinc-50 border border-zinc-200 text-xs text-zinc-600">

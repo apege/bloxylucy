@@ -7,7 +7,7 @@ import { StoreSettings } from '@/lib/admin-types';
 import { getStoreSettings, getCachedStoreSettings, INITIAL_MOCK_SETTINGS } from '@/lib/supabase-service';
 
 export default function HeroBanner() {
-  const [settings, setSettings] = useState<StoreSettings>(() => getCachedStoreSettings());
+  const [settings, setSettings] = useState<StoreSettings>(INITIAL_MOCK_SETTINGS);
   const [timeLeft, setTimeLeft] = useState({
     days: 19,
     hours: 23,
