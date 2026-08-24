@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
       order_code: orderCode,
       product_id: product_id || null,
       roblox_username: String(roblox_username).trim(),
-      customer_phone: customer_phone ? String(customer_phone).trim() : '6287816959979',
+      customer_phone: customer_phone ? String(customer_phone).trim() : '6285828378025',
       robux: Math.max(1, Number(robux)),
       price: Math.max(0, Number(price)),
       payment_method: 'qris',

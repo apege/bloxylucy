@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     const cleanUsername = String(roblox_username).trim();
     let cleanPhone = String(customer_phone || '').trim();
     if (!cleanPhone) {
-      cleanPhone = '6287816959979';
+      cleanPhone = '6285828378025';
     }
 
     // Auto-resolve Roblox User ID if not provided

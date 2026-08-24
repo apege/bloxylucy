@@ -8,7 +8,7 @@ export const revalidate = 0;
 
 const DEFAULT_SETTINGS: StoreSettings = {
   store_name: 'BloxyLucy Top Up Robux',
-  whatsapp_number: '6287816959979',
+  whatsapp_number: '6285828378025',
   qris_image_path: '/images/qris.webp',
   logo_image_path: '/images/logo.jpeg',
   banner_image_path: '',

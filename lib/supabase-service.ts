@@ -14,7 +14,7 @@ export const INITIAL_MOCK_CUSTOMERS: Customer[] = [];
 
 export const INITIAL_MOCK_SETTINGS: StoreSettings = {
   store_name: 'BloxyLucy Top Up Robux',
-  whatsapp_number: '6287816959979',
+  whatsapp_number: '6285828378025',
   qris_image_path: '/images/qris.webp',
   logo_image_path: '/images/logo.jpeg',
   banner_image_path: '',
@@ -334,12 +334,7 @@ export async function toggleCustomerBlacklist(
 
 // 4. SETTINGS API
 export function getCachedStoreSettings(): StoreSettings {
-  const local = getLocal<StoreSettings>(STORAGE_KEY_SETTINGS, INITIAL_MOCK_SETTINGS);
-  return {
-    ...INITIAL_MOCK_SETTINGS,
-    ...local,
-    promo_active: local.promo_active !== undefined ? Boolean(local.promo_active) : true,
-  };
+  return INITIAL_MOCK_SETTINGS;
 }
 
 export async function getStoreSettings(): Promise<StoreSettings> {

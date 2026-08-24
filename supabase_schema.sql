@@ -7,7 +7,7 @@
 CREATE TABLE IF NOT EXISTS public.store_settings (
     id BIGINT PRIMARY KEY DEFAULT 1,
     store_name TEXT DEFAULT 'BloxyLucy Top Up Robux',
-    whatsapp_number TEXT DEFAULT '6287816959979',
+    whatsapp_number TEXT DEFAULT '6285828378025',
     qris_image_path TEXT DEFAULT '/images/qris.webp',
     logo_image_path TEXT DEFAULT '/images/logo.jpeg',
     banner_image_path TEXT DEFAULT '/images/pricelist.jpeg',
@@ -159,7 +159,7 @@ INSERT INTO public.store_settings (
 ) VALUES (
     1,
     'BloxyLucy Top Up Robux',
-    '6287816959979',
+    '6285828378025',
     '/images/qris.webp',
     '/images/logo.jpeg',
     '/images/pricelist.jpeg',
