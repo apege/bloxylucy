@@ -187,7 +187,11 @@ export default function OrderDetailPage({
 
   const handleContactWhatsApp = () => {
     if (!order) return;
-    const phone = order.customer_phone?.replace(/^0/, '62') || '6287816959979';
+    const phone = order.customer_phone ? order.customer_phone.replace(/\D/g, '').replace(/^0/, '62') : '';
+    if (!phone) {
+      alert('Pelanggan ini belum mencantumkan nomor WhatsApp.');
+      return;
+    }
     const message = encodeURIComponent(
       `Halo Kak @${order.roblox_username}!\n\nKami dari Admin BloxyLucy mengenai pesanan Robux Kakak (*#${order.order_code}*).\nPaket: ${formatRobux(order.robux)} Robux\nStatus saat ini: *${getStatusLabel(order.order_status)}*\n\nAda yang bisa kami bantu?`
     );
@@ -200,13 +204,13 @@ export default function OrderDetailPage({
     const reviewUrl = `${origin}/?token=${order.order_code}#testimoni`;
 
     const phone = order.customer_phone ? order.customer_phone.replace(/[^0-9]/g, '') : '';
-    const targetPhone = phone.startsWith('0') ? `62${phone.slice(1)}` : (phone || '6287816959979');
+    const targetPhone = phone.startsWith('0') ? `62${phone.slice(1)}` : phone;
 
     const message = encodeURIComponent(
       `Halo kak @${order.roblox_username}!\n\nTerima kasih sudah top up ${new Intl.NumberFormat('id-ID').format(order.robux)} Robux di BloxyLucy! Pesananmu dengan kode #${order.order_code} telah SELESAI diproses.\n\nYuk berikan ulasan pengalaman belanja kamu melalui link token terverifikasi di bawah ini:\n${reviewUrl}\n\nDitunggu orderan berikutnya yaa!`
     );
 
-    if (order.customer_phone) {
+    if (targetPhone) {
       window.open(`https://wa.me/${targetPhone}?text=${message}`, '_blank');
     } else {
       navigator.clipboard.writeText(reviewUrl);

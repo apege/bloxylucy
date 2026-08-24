@@ -305,7 +305,7 @@ export default function StoreSettingsPage() {
                     value={settings.whatsapp_number}
                     onChange={(e) => setSettings({ ...settings, whatsapp_number: e.target.value })}
                     required
-                    placeholder="Contoh: 6287816959979"
+                    placeholder="Contoh: 6285828378025"
                     className="w-full p-3 rounded-2xl border border-pink-200 text-xs sm:text-sm font-bold text-zinc-900 focus:outline-none focus:ring-2 focus:ring-pink-300 font-mono bg-[#fffcfd]"
                   />
                   <p className="text-[10px] text-zinc-400">

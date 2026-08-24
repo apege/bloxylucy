@@ -23,7 +23,7 @@ import {
   ExternalLink,
   LogOut
 } from 'lucide-react';
-import { getOrders } from '@/lib/supabase-service';
+import { getOrders, getStoreSettings, getCachedStoreSettings } from '@/lib/supabase-service';
 
 interface NavItem {
   label: string;
@@ -52,6 +52,13 @@ function SidebarInner({ isOpen, onClose }: AdminSidebarProps) {
 
   const [pendingCount, setPendingCount] = useState<number>(3);
   const [processingCount, setProcessingCount] = useState<number>(1);
+  const [csPhone, setCsPhone] = useState<string>('6285828378025');
+
+  useEffect(() => {
+    getStoreSettings().then((s) => {
+      if (s?.whatsapp_number) setCsPhone(s.whatsapp_number);
+    }).catch(console.error);
+  }, []);
 
   useEffect(() => {
     async function loadCounts() {
@@ -276,7 +283,7 @@ function SidebarInner({ isOpen, onClose }: AdminSidebarProps) {
             </div>
 
             <a
-              href="https://wa.me/6287816959979?text=Halo%20Admin%20BloxyLucy,%20saya%20butuh%20bantuan"
+              href={`https://wa.me/${csPhone}?text=Halo%20Admin%20BloxyLucy,%20saya%20butuh%20bantuan`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center w-full py-1.5 px-3 rounded-xl bg-white border border-pink-200 text-pink-600 hover:bg-pink-500 hover:text-white text-[11px] font-bold shadow-2xs transition-colors gap-1.5"
