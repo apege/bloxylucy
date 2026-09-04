@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { invalidateMemoryCache } from '@/lib/server-cache';
 
 export async function PATCH(
   req: NextRequest,
@@ -69,6 +70,8 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
+    invalidateMemoryCache('testimonials_');
+
     return NextResponse.json({
       success: true,
       data: {
@@ -106,6 +109,8 @@ export async function DELETE(
       console.error('Supabase testimonial delete error:', error.message);
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
+
+    invalidateMemoryCache('testimonials_');
 
     return NextResponse.json({ success: true, message: 'Testimoni berhasil dihapus' });
   } catch (err: any) {

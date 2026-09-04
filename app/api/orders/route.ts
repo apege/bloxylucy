@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get('status') || '';
     const paymentStatus = searchParams.get('payment_status') || '';
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 0;
+    const includeFullProof = searchParams.get('include_proof') === 'true';
 
     let query = supabase.from('orders').select('*').order('created_at', { ascending: false });
 
@@ -45,7 +46,11 @@ export async function GET(req: NextRequest) {
       total_payment: item.total_payment || item.price || 0,
       payment_method: item.payment_method || 'Website',
       payment_status: item.payment_status || 'pending',
-      payment_proof_path: item.payment_proof_path,
+      payment_proof_path: item.payment_proof_path
+        ? (includeFullProof || !item.payment_proof_path.startsWith('data:')
+            ? item.payment_proof_path
+            : 'has_proof')
+        : null,
       order_status: item.order_status || 'pending',
       customer_notes: item.customer_notes || '-',
       admin_notes: item.admin_notes || '',

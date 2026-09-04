@@ -10,8 +10,10 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const blacklistOnly = searchParams.get('blacklist_only') === 'true';
 
-    // 1. Fetch blacklists table
-    const { data: blacklists } = await supabase.from('blacklists').select('*');
+    // 1. Fetch blacklists table (only necessary columns)
+    const { data: blacklists } = await supabase
+      .from('blacklists')
+      .select('id, roblox_username, roblox_user_id, phone, reason, created_at');
     const blacklistedSet = new Set<string>();
     const blacklistReasonMap = new Map<string, string>();
     (blacklists || []).forEach((b: any) => {
@@ -22,11 +24,15 @@ export async function GET(req: NextRequest) {
       }
     });
 
-    // 2. Fetch profiles
-    const { data: profiles } = await supabase.from('profiles').select('*');
+    // 2. Fetch profiles (only necessary lightweight columns)
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, roblox_username, roblox_user_id, email, phone, role, is_blacklisted, created_at');
 
-    // 3. Fetch orders to compute total_orders and total_spent
-    const { data: orders } = await supabase.from('orders').select('*');
+    // 3. Fetch orders (CRITICAL: exclude base64 payment_proof_path to save 99% egress bandwidth)
+    const { data: orders } = await supabase
+      .from('orders')
+      .select('roblox_username, roblox_user_id, customer_email, customer_phone, price, created_at');
 
     const customerMap = new Map<string, Customer>();
 

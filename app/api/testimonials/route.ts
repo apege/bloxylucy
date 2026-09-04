@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { Testimonial } from '@/lib/admin-types';
+import { getMemoryCache, setMemoryCache, invalidateMemoryCache } from '@/lib/server-cache';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -9,11 +10,31 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const activeOnly = searchParams.get('active_only') === 'true';
+    const cacheKey = `testimonials_${activeOnly ? 'active' : 'all'}`;
 
-    const { data, error } = await supabase
+    // 1. Return from in-memory cache if fresh (TTL: 60s)
+    const cached = getMemoryCache<Testimonial[]>(cacheKey, 60000);
+    if (cached && Array.isArray(cached) && cached.length > 0) {
+      return NextResponse.json(
+        { success: true, data: cached },
+        {
+          headers: {
+            'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+          },
+        }
+      );
+    }
+
+    let query = supabase
       .from('testimonials')
       .select('*')
       .order('created_at', { ascending: false });
+
+    if (activeOnly) {
+      query = query.eq('status', 'approved').limit(50);
+    }
+
+    const { data, error } = await query;
 
     if (error || !data) {
       console.warn('Supabase get testimonials warning:', error?.message);
@@ -78,7 +99,16 @@ export async function GET(req: NextRequest) {
       items = items.filter((t) => t.is_active);
     }
 
-    return NextResponse.json({ success: true, data: items });
+    setMemoryCache(cacheKey, items);
+
+    return NextResponse.json(
+      { success: true, data: items },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+        },
+      }
+    );
   } catch (err: any) {
     console.error('API Testimonials GET Error:', err);
     return NextResponse.json({ success: true, data: [] });
@@ -141,6 +171,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
       }
 
+      invalidateMemoryCache('testimonials_');
       return NextResponse.json({
         success: true,
         data: {
@@ -208,6 +239,8 @@ export async function POST(req: NextRequest) {
       console.error('Supabase insert customer testimonial error:', error);
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
+
+    invalidateMemoryCache('testimonials_');
 
     return NextResponse.json({
       success: true,
