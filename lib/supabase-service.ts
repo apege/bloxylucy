@@ -35,22 +35,78 @@ const STORAGE_KEY_PRODUCTS = 'bloxylucy_admin_products';
 const STORAGE_KEY_CUSTOMERS = 'bloxylucy_admin_customers';
 const STORAGE_KEY_SETTINGS = 'bloxylucy_admin_settings';
 
+// Client-side In-Memory Cache (0ms latency, unlimited memory, never throws QuotaExceededError)
+const clientMemoryMap = new Map<string, any>();
+
+function sanitizeForStorage(key: string, value: any): any {
+  if (!value) return value;
+
+  // If settings, remove huge base64 strings before writing to localStorage
+  if (key === STORAGE_KEY_SETTINGS && typeof value === 'object') {
+    const sanitized = { ...value };
+    if (sanitized.banner_image_path && typeof sanitized.banner_image_path === 'string' && sanitized.banner_image_path.length > 50000) {
+      sanitized.banner_image_path = ''; // Don't bloat localStorage with massive banner base64
+    }
+    if (sanitized.qris_image_path && typeof sanitized.qris_image_path === 'string' && sanitized.qris_image_path.length > 500000) {
+      sanitized.qris_image_path = '/images/qris.webp';
+    }
+    return sanitized;
+  }
+
+  // If orders, strip any base64 payment_proof_path strings before writing to localStorage
+  if (key === STORAGE_KEY_ORDERS && Array.isArray(value)) {
+    return value.map((o: any) => {
+      if (o.payment_proof_path && typeof o.payment_proof_path === 'string' && o.payment_proof_path.startsWith('data:')) {
+        return { ...o, payment_proof_path: 'has_proof' };
+      }
+      return o;
+    });
+  }
+
+  return value;
+}
+
 function getLocal<T>(key: string, fallback: T): T {
+  // Check in-memory map first (fastest, 0ms)
+  if (clientMemoryMap.has(key)) {
+    return clientMemoryMap.get(key) as T;
+  }
+
   if (typeof window === 'undefined') return fallback;
+
   try {
     const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : fallback;
+    if (item) {
+      const parsed = JSON.parse(item);
+      clientMemoryMap.set(key, parsed);
+      return parsed;
+    }
   } catch {
-    return fallback;
+    // Ignore localStorage read errors
   }
+
+  return fallback;
 }
 
 function setLocal<T>(key: string, value: T): void {
+  // Always update in-memory map first
+  clientMemoryMap.set(key, value);
+
   if (typeof window === 'undefined') return;
+
   try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch (err) {
-    console.error('Failed to save to localStorage:', err);
+    const sanitized = sanitizeForStorage(key, value);
+    localStorage.setItem(key, JSON.stringify(sanitized));
+  } catch (err: any) {
+    // If QuotaExceededError or storage full, clean up bloated historical keys and retry safely
+    try {
+      localStorage.removeItem(STORAGE_KEY_ORDERS);
+      localStorage.removeItem(STORAGE_KEY_CUSTOMERS);
+      const sanitized = sanitizeForStorage(key, value);
+      localStorage.setItem(key, JSON.stringify(sanitized));
+    } catch {
+      // Memory map is already updated, silently continue without crashing
+    }
   }
 }
 
