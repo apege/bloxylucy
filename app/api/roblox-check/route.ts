@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { getMemoryCache, setMemoryCache } from '@/lib/server-cache';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -15,13 +16,24 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const cacheKey = `roblox_user_${username.toLowerCase()}`;
+  const cachedUser = getMemoryCache<any>(cacheKey, 300000); // 5 minutes cache
+  if (cachedUser) {
+    return NextResponse.json(cachedUser, {
+      headers: {
+        'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=600',
+      },
+    });
+  }
+
   try {
-    // 0. Check if user is in BloxyLucy blacklist table
+    // 0. Check if user is in BloxyLucy blacklist table (Single query)
     try {
       const { data: blData } = await supabase
         .from('blacklists')
-        .select('roblox_username, reason')
+        .select('roblox_username, roblox_user_id, reason')
         .ilike('roblox_username', username)
+        .limit(1)
         .maybeSingle();
 
       if (blData) {
@@ -31,8 +43,8 @@ export async function GET(request: NextRequest) {
           message: `Akun Roblox "${username}" telah di-blacklist oleh BloxyLucy (${blData.reason || 'Pelanggaran'}). Pesanan tidak dapat dilanjutkan.`,
         });
       }
-    } catch (err) {
-      console.warn('Blacklist table query notice:', err);
+    } catch {
+      // Continue if table doesn't exist
     }
 
     // 1. Get Roblox User ID from Username
@@ -46,7 +58,7 @@ export async function GET(request: NextRequest) {
         usernames: [username],
         excludeBannedUsers: false,
       }),
-      cache: 'no-store',
+      next: { revalidate: 300 },
     });
 
     if (!userRes.ok) {
@@ -70,48 +82,12 @@ export async function GET(request: NextRequest) {
     const exactUsername = user.name;
     const displayName = user.displayName;
 
-    // Check exact username in blacklist too
-    try {
-      const { data: blDataExact } = await supabase
-        .from('blacklists')
-        .select('roblox_username, reason')
-        .ilike('roblox_username', exactUsername)
-        .maybeSingle();
-
-      if (blDataExact) {
-        return NextResponse.json({
-          success: false,
-          isBlacklisted: true,
-          message: `Akun Roblox "${exactUsername}" telah di-blacklist oleh BloxyLucy (${blDataExact.reason || 'Pelanggaran'}). Pesanan tidak dapat dilanjutkan.`,
-        });
-      }
-
-      // Check resolved Roblox User ID in blacklist too
-      if (userId) {
-        const { data: blDataId } = await supabase
-          .from('blacklists')
-          .select('roblox_username, reason')
-          .eq('roblox_user_id', String(userId))
-          .maybeSingle();
-
-        if (blDataId) {
-          return NextResponse.json({
-            success: false,
-            isBlacklisted: true,
-            message: `Akun Roblox dengan ID ${userId} ("${exactUsername}") telah di-blacklist oleh BloxyLucy (${blDataId.reason || 'Pelanggaran'}). Pesanan tidak dapat dilanjutkan.`,
-          });
-        }
-      }
-    } catch {
-      // Continue
-    }
-
     // 2. Fetch Avatar Headshot Thumbnail
     let avatarUrl = '';
     try {
       const thumbRes = await fetch(
         `https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=150x150&format=Png&isCircular=true`,
-        { cache: 'no-store' }
+        { next: { revalidate: 3600 } }
       );
       if (thumbRes.ok) {
         const thumbData = await thumbRes.json();
@@ -123,15 +99,22 @@ export async function GET(request: NextRequest) {
       // Ignore thumbnail error and continue
     }
 
-    return NextResponse.json({
+    const result = {
       success: true,
       userId,
       username: exactUsername,
       displayName,
       avatarUrl,
+    };
+
+    setMemoryCache(cacheKey, result);
+
+    return NextResponse.json(result, {
+      headers: {
+        'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=600',
+      },
     });
   } catch (error) {
-    console.error('Roblox check API error:', error);
     return NextResponse.json({
       success: false,
       message: 'Terjadi gangguan saat mengecek akun Roblox',
