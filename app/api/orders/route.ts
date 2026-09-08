@@ -14,7 +14,14 @@ export async function GET(req: NextRequest) {
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 0;
     const includeFullProof = searchParams.get('include_proof') === 'true';
 
-    let query = supabase.from('orders').select('*').order('created_at', { ascending: false });
+    // Select only lightweight columns to avoid transfer of massive base64 images
+    const baseColumns = 'id, order_code, product_id, user_id, roblox_username, roblox_user_id, customer_phone, robux, price, payment_method, payment_status, order_status, customer_notes, admin_notes, created_at, expires_at, updated_at';
+    const columnsToSelect = includeFullProof ? '*' : baseColumns;
+
+    let query = supabase
+      .from('orders')
+      .select(columnsToSelect)
+      .order('created_at', { ascending: false });
 
     if (status && status !== 'all') {
       query = query.eq('order_status', status);
@@ -24,11 +31,27 @@ export async function GET(req: NextRequest) {
       query = query.eq('payment_status', paymentStatus);
     }
 
-    const { data, error } = await query;
+    if (limit > 0) {
+      query = query.limit(limit);
+    } else {
+      query = query.limit(100); // Default safe pagination limit
+    }
+
+    let { data, error } = await query;
 
     if (error) {
-      console.warn('Supabase get orders error, returning empty list:', error.message);
-      return NextResponse.json({ success: true, data: [] });
+      // Fallback query if any custom column is missing
+      const fallbackQuery = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit > 0 ? limit : 50);
+
+      if (fallbackQuery.error) {
+        console.warn('Supabase get orders error, returning empty list:', fallbackQuery.error.message);
+        return NextResponse.json({ success: true, data: [] });
+      }
+      data = fallbackQuery.data;
     }
 
     let orders: Order[] = (data || []).map((item: any) => ({

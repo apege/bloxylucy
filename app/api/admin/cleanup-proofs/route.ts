@@ -8,12 +8,13 @@ export async function GET(req: NextRequest) {
     const warningThresholdIso = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
     const ninetyDaysAgoIso = new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
-    // Fetch all orders with proof
+    // Fetch all orders with proof (Exclude massive base64 payment_proof_path string to prevent statement timeout)
     const { data: ordersWithProof, error: ordersError } = await supabaseAdmin
       .from('orders')
-      .select('id, order_code, roblox_username, robux, price, payment_status, order_status, payment_proof_path, created_at, expires_at')
+      .select('id, order_code, roblox_username, robux, price, payment_status, order_status, created_at, expires_at')
       .not('payment_proof_path', 'is', null)
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: true })
+      .limit(500);
 
     if (ordersError) {
       console.error('Supabase fetch orders with proof error:', ordersError);
@@ -79,8 +80,9 @@ export async function POST(req: NextRequest) {
     // Safe check: either expires_at <= NOW() OR (expires_at is null AND created_at <= 90 days ago)
     const { data: expiredOrders, error: findError } = await supabaseAdmin
       .from('orders')
-      .select('id, order_code, payment_proof_path, created_at, expires_at')
-      .not('payment_proof_path', 'is', null);
+      .select('id, order_code, created_at, expires_at')
+      .not('payment_proof_path', 'is', null)
+      .limit(500);
 
     if (findError) {
       console.error('Failed to find expired orders:', findError);
