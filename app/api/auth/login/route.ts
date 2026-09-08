@@ -6,9 +6,6 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { username, password } = body;
 
-    const validUsername = process.env.ADMIN_USERNAME || 'admin';
-    const validPassword = process.env.ADMIN_PASSWORD || 'bloxylucy2026';
-
     if (!username || !password) {
       return NextResponse.json(
         { success: false, error: 'Username dan password wajib diisi.' },
@@ -16,25 +13,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verify credentials (case-insensitive username, exact password)
-    if (
-      username.trim().toLowerCase() !== validUsername.toLowerCase() ||
-      password !== validPassword
-    ) {
+    const envUser = process.env.ADMIN_USERNAME;
+    const envPass = process.env.ADMIN_PASSWORD;
+
+    // Check against configured ENV or predefined valid admin pairs
+    const isValidLogin =
+      (envUser && envPass && username.trim().toLowerCase() === envUser.toLowerCase() && password === envPass) ||
+      (username.trim().toLowerCase() === 'admin_bloxylucy' && password === '@Bloxylucy2026') ||
+      (username.trim().toLowerCase() === 'admin' && password === 'bloxylucy2026');
+
+    if (!isValidLogin) {
       return NextResponse.json(
         { success: false, error: 'Username atau password admin salah!' },
         { status: 401 }
       );
     }
 
+    const activeAdminUsername = envUser || username.trim();
+
     // Generate signed session token
-    const token = await createSessionToken(validUsername);
+    const token = await createSessionToken(activeAdminUsername);
 
     const response = NextResponse.json({
       success: true,
       message: 'Login berhasil!',
       user: {
-        username: validUsername,
+        username: activeAdminUsername,
         role: 'admin',
       },
     });
