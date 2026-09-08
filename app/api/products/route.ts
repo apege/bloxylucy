@@ -12,14 +12,14 @@ export async function GET(req: NextRequest) {
     const activeOnly = searchParams.get('active_only') === 'true';
     const cacheKey = `products_${activeOnly ? 'active' : 'all'}`;
 
-    // 1. Return from in-memory cache if fresh (TTL: 60s)
-    const cached = getMemoryCache<any[]>(cacheKey, 60000);
+    // 1. Return from in-memory cache if fresh (TTL: 5 mins)
+    const cached = getMemoryCache<any[]>(cacheKey, 300000);
     if (cached && Array.isArray(cached) && cached.length > 0) {
       return NextResponse.json(
         { success: true, data: cached },
         {
           headers: {
-            'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120',
+            'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=86400',
           },
         }
       );
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
       { success: true, data: productsData },
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120',
+          'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=86400',
         },
       }
     );

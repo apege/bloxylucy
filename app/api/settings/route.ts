@@ -25,13 +25,13 @@ const DEFAULT_SETTINGS: StoreSettings = {
 
 export async function GET(req: NextRequest) {
   try {
-    const cached = getMemoryCache<StoreSettings>('store_settings', 60000);
+    const cached = getMemoryCache<StoreSettings>('store_settings', 300000);
     if (cached) {
       return NextResponse.json(
         { success: true, data: cached },
         {
           headers: {
-            'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120',
+            'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=86400',
           },
         }
       );
@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
       { success: true, data: mergedSettings },
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120',
+          'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=86400',
         },
       }
     );
